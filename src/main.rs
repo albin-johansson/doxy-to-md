@@ -1,3 +1,8 @@
+mod d2m;
+
+use crate::d2m::parser;
+use crate::d2m::generator;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use clap::Parser;
@@ -33,4 +38,7 @@ fn main() {
     println!("Output directory: {}", canonical_output_dir.display());
 
     fs::create_dir_all(&canonical_input_dir).unwrap();
+
+    let index = parser::parse_xml(&canonical_input_dir);
+    generator::generate_markdown(&canonical_output_dir, &index)
 }
