@@ -1,0 +1,12 @@
+[package]
+name = "doxy-to-md"
+version = "0.1.0"
+edition = "2021"
+authors = ["albin-johansson"]
+description = "Converts Doxygen XML files to Markdown files"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "3.1.5", features = ["derive"] }
+minidom = "0.12.0"
