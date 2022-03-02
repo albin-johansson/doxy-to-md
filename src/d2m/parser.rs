@@ -1,12 +1,29 @@
-use crate::d2m::doxygen;
 use crate::d2m::doxygen::RefID;
+use crate::d2m::doxygen::CompoundKind;
 use crate::d2m::doxygen::CompoundKind::*;
 use crate::d2m::doxygen::Registry;
 
 use std::{fs, path};
 use std::path::PathBuf;
-use std::collections::HashMap;
 use minidom::{Element, NSChoice};
+
+fn parse_member_declaration(registry: &mut Registry,
+                            element: &Element,
+                            compound_kind: CompoundKind) {
+    let ref_id: RefID = element.attr("refid").unwrap().to_owned();
+
+    match element.attr("kind") {
+        Some("define") => {}
+        Some("friend") => registry.add_function(ref_id, compound_kind == CLASS || compound_kind == STRUCT),
+        Some("typedef") => {}
+        Some("variable") => {}
+        Some("function") => {}
+        Some("enum") => {}
+        Some("enumvalue") => {}
+        Some(x) => panic!("Encountered unsupported member type: {}", x),
+        _ => panic!("Member declaration in index has no kind attribute!")
+    };
+}
 
 fn parse_compound_declaration(registry: &mut Registry, element: &Element) {
     let ref_id: RefID = element.attr("refid").unwrap().to_owned();
@@ -31,14 +48,15 @@ fn parse_compound_declaration(registry: &mut Registry, element: &Element) {
         _ => panic!("Compound declaration in index has no kind attribute!")
     };
 
+    let kind = compound.kind;
     for child in element.children() {
-        if let Some("function") = child.name() {
-            // TODO
+        if child.name() == "member" {
+            parse_member_declaration(registry, &child, kind);
         }
     }
 }
 
-fn parse_index_file(input_dir: &path::PathBuf) -> Registry {
+fn parse_index_file(input_dir: &PathBuf) -> Registry {
     let index_file = input_dir.join("index.xml");
     println!("Parsing index file {}", index_file.display());
 
@@ -57,7 +75,7 @@ fn parse_index_file(input_dir: &path::PathBuf) -> Registry {
     return registry;
 }
 
-pub fn parse_xml(input_dir: &path::PathBuf) -> Registry {
+pub fn parse_xml(input_dir: &PathBuf) -> Registry {
     println!("Parsing XML input...");
     let mut registry = parse_index_file(input_dir);
 

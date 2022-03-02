@@ -31,7 +31,7 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn new() -> Self {
+    pub fn new(is_member: bool) -> Self {
         Self {
             name: String::from("?"),
             qualified_name: String::from("?"),
@@ -46,7 +46,7 @@ impl Function {
             is_noexcept: false,
             is_virtual: false,
             is_explicit: false,
-            is_member: false,
+            is_member,
         }
     }
 }
@@ -69,6 +69,7 @@ pub struct Compound {
     pub name: String,
     pub title: String,
     pub kind: CompoundKind,
+    pub functions: Vec<RefID>,
 }
 
 impl Compound {
@@ -77,6 +78,7 @@ impl Compound {
             name: String::from("?"),
             title: String::from("?"),
             kind: CompoundKind::UNKNOWN,
+            functions: Vec::new(),
         }
     }
 }
@@ -84,17 +86,23 @@ impl Compound {
 #[derive(Debug)]
 pub struct Registry {
     compounds: HashMap<RefID, Compound>,
+    functions: HashMap<RefID, Function>,
 }
 
 impl Registry {
     pub fn new() -> Self {
         Self {
-            compounds: HashMap::new()
+            compounds: HashMap::new(),
+            functions: HashMap::new(),
         }
     }
 
     pub fn add_compound(&mut self, id: RefID) {
         self.compounds.insert(id, Compound::new());
+    }
+
+    pub fn add_function(&mut self, id: RefID, is_member: bool) {
+        self.functions.insert(id, Function::new(is_member));
     }
 
     pub fn compound_mut(&mut self, id: &RefID) -> Option<&mut Compound> {
