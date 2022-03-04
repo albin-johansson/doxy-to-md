@@ -3,6 +3,7 @@ use AccessModifier::*;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
+use std::str::FromStr;
 
 pub type RefID = String;
 
@@ -20,6 +21,19 @@ impl fmt::Display for AccessModifier {
             PROTECTED => "protected",
             PUBLIC => "public"
         })
+    }
+}
+
+impl FromStr for AccessModifier {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "private" => Ok(PRIVATE),
+            "protected" => Ok(PROTECTED),
+            "public" => Ok(PUBLIC),
+            s => Err("Unsupported access modifier string!")
+        }
     }
 }
 

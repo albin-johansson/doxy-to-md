@@ -2,6 +2,7 @@ use crate::d2m::doxygen::*;
 use crate::d2m::doxygen::CompoundKind::*;
 use crate::d2m::doxygen::AccessModifier::*;
 
+use std::str::FromStr;
 use std::borrow::BorrowMut;
 use std::fs;
 use std::path::PathBuf;
@@ -28,16 +29,6 @@ fn parse_compound_kind(kind: Option<&str>) -> CompoundKind
         Some(x) => panic!("Encountered unsupported compound type: {}", x),
         _ => panic!("Compound declaration in index has no kind attribute!")
     };
-}
-
-fn parse_access_modifier(modifier: &str) -> AccessModifier
-{
-    match modifier {
-        "private" => PRIVATE,
-        "protected" => PROTECTED,
-        "public" => PUBLIC,
-        s => panic!("Did not recognize access modifier: {}", s)
-    }
 }
 
 fn remove_redundant_const_from_function_parameters(func: &mut Function)
@@ -82,7 +73,9 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
 }
 
 fn simplify_function_noexcept_specifier(func: &mut Function)
-{}
+{
+    // TODO
+}
 
 fn parse_function_definition(elem: &Element, func: &mut Function)
 {
@@ -99,7 +92,7 @@ fn parse_function_definition(elem: &Element, func: &mut Function)
     func.return_type = elem.get_child("type", NSChoice::Any).unwrap().text();
     func.arguments = elem.get_child("argsstring", NSChoice::Any).unwrap().text();
 
-    func.access = parse_access_modifier(elem.attr("prot").unwrap());
+    func.access = AccessModifier::from_str(elem.attr("prot").unwrap()).unwrap();
 
     // TODO func.template_parameters =
 
@@ -110,7 +103,7 @@ fn parse_function_definition(elem: &Element, func: &mut Function)
 
 fn parse_variable_definition(elem: &Element, var: &mut Variable)
 {
-    var.access = parse_access_modifier(elem.attr("prot").unwrap());
+    var.access = AccessModifier::from_str(elem.attr("prot").unwrap()).unwrap();
 
     var.is_static = elem.attr("static").unwrap() == "yes";
     var.is_mutable = elem.attr("mutable").unwrap() == "yes";
