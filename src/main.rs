@@ -4,7 +4,7 @@ use crate::d2m::parser;
 use crate::d2m::generator;
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -19,26 +19,28 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-
     let input_dir = PathBuf::from(&args.input_dir);
     let output_dir = PathBuf::from(&args.output_dir);
+
+    println!("--input-dir: {}", input_dir.display());
+    println!("--output-dir: {}", output_dir.display());
+
+    if !input_dir.is_absolute() {
+        panic!("Input directory must be absolute!");
+    }
+
+    if !output_dir.is_absolute() {
+        panic!("Output directory must be absolute!");
+    }
 
     if !input_dir.exists() {
         panic!("Input directory does not exist!");
     }
 
-    if !output_dir.exists() {
-        panic!("Output directory does not exist!");
-    }
+    fs::create_dir_all(&output_dir).unwrap();
+    fs::create_dir_all(output_dir.join("groups")).unwrap();
+    fs::create_dir_all(output_dir.join("classes")).unwrap();
 
-    let canonical_input_dir = input_dir.canonicalize().unwrap();
-    let canonical_output_dir = output_dir.canonicalize().unwrap();
-
-    println!("Input directory: {}", canonical_input_dir.display());
-    println!("Output directory: {}", canonical_output_dir.display());
-
-    fs::create_dir_all(&canonical_input_dir).unwrap();
-
-    let index = parser::parse_xml(&canonical_input_dir);
-    generator::generate_markdown(&canonical_output_dir, &index)
+    let index = parser::parse_xml(&input_dir);
+    generator::generate_markdown(&output_dir, &index).unwrap();
 }

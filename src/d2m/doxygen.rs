@@ -1,7 +1,8 @@
 use AccessModifier::*;
 
 use std::collections::HashMap;
-use std::collections::hash_map::Iter;
+use std::fmt;
+use std::fmt::Formatter;
 
 pub type RefID = String;
 
@@ -10,6 +11,39 @@ pub enum AccessModifier {
     PRIVATE,
     PROTECTED,
     PUBLIC,
+}
+
+impl fmt::Display for AccessModifier {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
+            PRIVATE => "private",
+            PROTECTED => "protected",
+            PUBLIC => "public"
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct Variable {
+    pub name: String,
+    pub definition: String,
+    pub access: AccessModifier,
+    pub is_static: bool,
+    pub is_constexpr: bool,
+    pub is_mutable: bool,
+}
+
+impl Variable {
+    pub fn new() -> Self {
+        Self {
+            name: String::from("?"),
+            definition: String::from("?"),
+            access: PRIVATE,
+            is_static: false,
+            is_constexpr: false,
+            is_mutable: false,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -51,6 +85,34 @@ impl Function {
     }
 }
 
+#[derive(Debug)]
+pub struct Class {
+    pub unqualified_name: String,
+    pub is_struct: bool,
+}
+
+impl Class {
+    pub fn new(is_struct: bool) -> Self {
+        Self {
+            unqualified_name: String::from("?"),
+            is_struct,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Define {
+    pub name: String,
+}
+
+impl Define {
+    pub fn new() -> Self {
+        Self {
+            name: String::from("?")
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum CompoundKind {
     UNKNOWN,
@@ -69,7 +131,12 @@ pub struct Compound {
     pub name: String,
     pub title: String,
     pub kind: CompoundKind,
+    pub groups: Vec<RefID>,
+    pub namespaces: Vec<RefID>,
+    pub classes: Vec<RefID>,
     pub functions: Vec<RefID>,
+    pub variables: Vec<RefID>,
+    pub defines: Vec<RefID>,
 }
 
 impl Compound {
@@ -78,38 +145,33 @@ impl Compound {
             name: String::from("?"),
             title: String::from("?"),
             kind: CompoundKind::UNKNOWN,
+            groups: Vec::new(),
+            namespaces: Vec::new(),
+            classes: Vec::new(),
             functions: Vec::new(),
+            variables: Vec::new(),
+            defines: Vec::new(),
         }
     }
 }
 
 #[derive(Debug)]
 pub struct Registry {
-    compounds: HashMap<RefID, Compound>,
-    functions: HashMap<RefID, Function>,
+    pub compounds: HashMap<RefID, Compound>,
+    pub classes: HashMap<RefID, Class>,
+    pub functions: HashMap<RefID, Function>,
+    pub variables: HashMap<RefID, Variable>,
+    pub defines: HashMap<RefID, Define>,
 }
 
 impl Registry {
     pub fn new() -> Self {
         Self {
             compounds: HashMap::new(),
+            classes: HashMap::new(),
             functions: HashMap::new(),
+            variables: HashMap::new(),
+            defines: HashMap::new(),
         }
-    }
-
-    pub fn add_compound(&mut self, id: RefID) {
-        self.compounds.insert(id, Compound::new());
-    }
-
-    pub fn add_function(&mut self, id: RefID, is_member: bool) {
-        self.functions.insert(id, Function::new(is_member));
-    }
-
-    pub fn compound_mut(&mut self, id: &RefID) -> Option<&mut Compound> {
-        return self.compounds.get_mut(id);
-    }
-
-    pub fn compounds(&self) -> Iter<RefID, Compound> {
-        return self.compounds.iter();
     }
 }
