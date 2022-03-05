@@ -5,23 +5,23 @@ use std::path::PathBuf;
 use crate::d2m::doxygen::CompoundKind::*;
 use crate::d2m::doxygen::{Compound, Function, RefID, Registry};
 
-fn generate_group_filename(name: &str) -> String {
+fn generate_group_filename(name: &str) -> String
+{
   return format!("group_{}.md", name.to_lowercase().replace(" ", "_"));
 }
 
-fn get_class_filename(name: &str) -> String {
-  return format!(
-    "class_{}.md",
-    name
-      .to_lowercase()
-      .replace("::", "_")
-      .replace("<", "_")
-      .replace(">", "_")
-      .replace(" ", "")
-  );
+fn get_class_filename(name: &str) -> String
+{
+  return format!("class_{}.md",
+                 name.to_lowercase()
+                     .replace("::", "_")
+                     .replace("<", "_")
+                     .replace(">", "_")
+                     .replace(" ", ""));
 }
 
-fn generate_index_file(output_dir: &PathBuf, registry: &Registry) -> io::Result<()> {
+fn generate_index_file(output_dir: &PathBuf, registry: &Registry) -> io::Result<()>
+{
   let path = output_dir.join("index.md");
   println!("Generating file {}", path.display());
 
@@ -47,7 +47,8 @@ fn generate_index_file(output_dir: &PathBuf, registry: &Registry) -> io::Result<
   return Ok(());
 }
 
-fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<()> {
+fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<()>
+{
   write!(file, "\n---\n")?;
   write!(file, "\n### **{}**\n", &func.name)?;
 
@@ -91,6 +92,10 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
     write!(file, "\n*This is a {} function.*\n", func.access)?;
   }
 
+  if func.is_void_or_ctor() {
+    let i = 42;
+  }
+
   write!(file, "\n```C++\n")?;
   if !func.template_args.is_empty() {
     write!(file, "template <")?;
@@ -101,22 +106,17 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
     }
     write!(file, ">\n")?;
   }
-  write!(
-    file,
-    "{} {}{};\n",
-    &func.return_type, &func.name, &func.args
-  )?;
+  write!(file, "{} {}{};\n", &func.return_type, &func.name, &func.args)?;
   write!(file, "```\n")?;
 
   return Ok(());
 }
 
-fn generate_class_file(
-  destination: &PathBuf,
-  registry: &Registry,
-  compound_id: &RefID,
-  compound: &Compound,
-) -> io::Result<()> {
+fn generate_class_file(destination: &PathBuf,
+                       registry: &Registry,
+                       compound_id: &RefID,
+                       compound: &Compound) -> io::Result<()>
+{
   // println!("Generating file {}", destination.display());
 
   let class = registry.classes.get(compound_id).unwrap();
@@ -162,11 +162,10 @@ fn generate_class_file(
   return Ok(());
 }
 
-fn generate_group_file(
-  destination: &PathBuf,
-  registry: &Registry,
-  compound: &Compound,
-) -> io::Result<()> {
+fn generate_group_file(destination: &PathBuf,
+                       registry: &Registry,
+                       compound: &Compound) -> io::Result<()>
+{
   // println!("Generating file {}", destination.display());
   let file = File::create(destination);
   if let Ok(mut file) = file {
@@ -251,7 +250,8 @@ fn generate_group_file(
   return Ok(());
 }
 
-pub fn generate_markdown(output_dir: &PathBuf, registry: &Registry) -> io::Result<()> {
+pub fn generate_markdown(output_dir: &PathBuf, registry: &Registry) -> io::Result<()>
+{
   println!("Generating Markdown output...");
 
   generate_index_file(output_dir, registry)?;
