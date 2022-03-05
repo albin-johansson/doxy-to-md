@@ -32,7 +32,7 @@ impl FromStr for AccessModifier {
             "private" => Ok(PRIVATE),
             "protected" => Ok(PROTECTED),
             "public" => Ok(PUBLIC),
-            s => Err("Unsupported access modifier string!")
+            _ => Err("Unsupported access modifier string!")
         }
     }
 }
