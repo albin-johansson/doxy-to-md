@@ -32,7 +32,7 @@ fn generate_index_file(output_dir: &PathBuf, registry: &Registry) -> io::Result<
 
     write!(file, "\n## Modules\n\n")?;
 
-    for (compound_id, compound) in &registry.compounds {
+    for (_, compound) in &registry.compounds {
         // TODO arrange by group relations (subgroups)
         if compound.kind == GROUP {
             write!(file, "* [{}](groups/{})\n", &compound.title, generate_group_filename(&compound.name))?;
