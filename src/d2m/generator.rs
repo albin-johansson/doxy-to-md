@@ -107,7 +107,7 @@ fn generate_group_file(destination: &PathBuf,
 
         write!(file, "\n## Groups\n\n")?;
         if compound.groups.is_empty() {
-            write!(file, "There are no groups owned by this group.\n")?;
+            write!(file, "There are no associated subgroups for this group.\n")?;
         } else {
             for group_id in &compound.groups {
                 let group = registry.compounds.get(group_id).unwrap();
