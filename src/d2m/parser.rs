@@ -243,13 +243,10 @@ fn parse_compound_declaration(registry: &mut Registry, element: &Element)
         _ => ()
     }
 
-    {
-        let mut reg = registry.borrow_mut();
-        reg.compounds.insert(ref_id.to_owned(), Compound::new());
-        let mut compound = reg.compounds.get_mut(&ref_id).unwrap();
-        compound.kind = kind;
-        compound.name = name;
-    }
+    registry.compounds.insert(ref_id.to_owned(), Compound::new());
+    let mut compound = registry.compounds.get_mut(&ref_id).unwrap();
+    compound.kind = kind;
+    compound.name = name;
 
     for child in element.children() {
         if child.name() == "member" {
