@@ -52,8 +52,6 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
   write!(file, "\n---\n")?;
   write!(file, "\n### **{}**\n", &func.name)?;
 
-  // TODO brief, details, template parameters, parameter docs, exceptions
-
   if !func.docs.brief.is_empty() {
     for docs in &func.docs.brief {
       write!(file, "\n{}\n", docs)?;
