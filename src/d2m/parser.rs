@@ -34,7 +34,7 @@ fn parse_text(root: &Element) -> String
           content += parse_text(elem).as_str();
         }
         "computeroutput" => {
-          content += format!("`{}`", parse_text(elem)).as_str();
+          content += format!(" `{}` ", parse_text(elem)).as_str();
         }
         "itemizedlist" => {
           content += format!("\n{}", parse_text(elem)).as_str();
