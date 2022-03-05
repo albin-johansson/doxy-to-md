@@ -179,9 +179,9 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
     }
 
     if !is_pointer && arg.contains("const") {
-      new_args.push_str(arg.replace("const ", "").as_str());
+      new_args += arg.replace("const ", "").as_str();
     } else {
-      new_args.push_str(arg);
+      new_args += arg;
     }
 
     first = false;
