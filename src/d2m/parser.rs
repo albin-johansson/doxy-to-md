@@ -220,10 +220,10 @@ fn parse_member_declaration(registry: &mut Registry, element: &Element, parent_i
 
 fn parse_class_declaration(registry: &mut Registry, ref_id: &RefID, name: &String, is_struct: bool)
 {
-    let mut reg = registry.borrow_mut();
+    let reg = registry.borrow_mut();
     reg.classes.insert(ref_id.to_owned(), Class::new(is_struct));
 
-    let mut class = reg.classes.get_mut(ref_id).unwrap();
+    let class = reg.classes.get_mut(ref_id).unwrap();
     class.unqualified_name = name.split("::").last().unwrap().to_owned();
 }
 
