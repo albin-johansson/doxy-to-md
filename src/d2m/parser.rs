@@ -1,4 +1,3 @@
-use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::fs;
 use std::iter;
@@ -31,18 +30,10 @@ fn parse_text(root: &Element) -> String
       }
     } else if let Some(elem) = node.as_element() {
       match elem.name() {
-        "para" => {
-          content += parse_text(elem).as_str();
-        }
-        "computeroutput" => {
-          content += format!(" `{}` ", parse_text(elem)).as_str();
-        }
-        "itemizedlist" => {
-          content += format!("\n{}", parse_text(elem)).as_str();
-        }
-        "listitem" => {
-          content += format!("* {}\n", parse_text(elem)).as_str();
-        }
+        "para" => content += parse_text(elem).as_str(),
+        "computeroutput" => content += format!(" `{}` ", parse_text(elem)).as_str(),
+        "itemizedlist" => content += format!("\n{}", parse_text(elem)).as_str(),
+        "listitem" => content += format!("* {}\n", parse_text(elem)).as_str(),
         "ref" => {
           // TODO use
           let _referenced_id = elem.attr("refid").unwrap();
@@ -64,17 +55,15 @@ fn parse_parameter_list(elem: &Element) -> HashMap<String, String>
   let mut entries = HashMap::new();
 
   for item in elem.children().filter(|x| x.is("parameteritem", AnyNS)) {
-    let mut name = None;
+    let list = item.get_child("parameternamelist", AnyNS).unwrap();
 
-    if let Some(list) = item.get_child("parameternamelist", AnyNS) {
-      if let Some(parameter_name) = list.get_child("parametername", AnyNS) {
-        name = Some(parse_text(parameter_name));
-      }
-    }
+    let name_elem = list.get_child("parametername", AnyNS).unwrap();
+    let name = parse_text(name_elem);
 
-    if let Some(desc) = item.get_child("parameterdescription", AnyNS) {
-      entries.insert(name.unwrap(), parse_text(desc));
-    }
+    let desc_elem = item.get_child("parameterdescription", AnyNS).unwrap();
+    let desc = parse_text(desc_elem);
+
+    entries.insert(name, desc);
   }
 
   return entries;
@@ -132,11 +121,11 @@ fn parse_comment(elem: &Element) -> Comment
                   comment.see_also.push(parse_text(para));
                 }
               }
-              s => println!("Ignoring simple section with tag '{}'", s),
+              kind => println!("Ignoring simple section of type '{}'", kind),
             }
           }
         }
-        s => println!("Ignoring {}", s)
+        tag => println!("Ignoring child of detailed description with tag '{}'", tag)
       }
     }
   }
@@ -148,12 +137,9 @@ fn parse_template_args(elem: &Element) -> Vec<String>
 {
   let mut args = Vec::new();
 
-  for param in elem.children() {
-    if param.name() == "param" {
-      if let Some(name) = param.get_child("type", AnyNS) {
-        args.push(name.text());
-      }
-    }
+  for param in elem.children().filter(|e| e.is("param", AnyNS)) {
+    let type_elem = param.get_child("type", AnyNS).unwrap();
+    args.push(type_elem.text());
   }
 
   return args;
@@ -183,7 +169,7 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
 
   let alignment_offset = func.return_type.len() + func.name.len() + 1;
 
-  for arg in head.split(",").filter(|x| !x.is_empty()) {
+  for arg in head.split(",").filter(|s| !s.is_empty()) {
     let is_pointer = arg.contains("*") || arg.contains("&");
 
     if !first {
@@ -215,6 +201,8 @@ fn simplify_function_noexcept_specifier(_func: &mut Function)
 
 fn parse_function_definition(elem: &Element, func: &mut Function)
 {
+  func.access = AccessModifier::from_str(elem.attr("prot").unwrap()).unwrap();
+
   func.is_static = elem.attr("static").unwrap() == "yes";
   func.is_const = elem.attr("const").unwrap() == "yes";
   func.is_explicit = elem.attr("explicit").unwrap() == "yes";
@@ -222,30 +210,27 @@ fn parse_function_definition(elem: &Element, func: &mut Function)
   func.is_virtual = elem.attr("virt").unwrap() != "non-virtual";
   func.is_noexcept = elem.attr("const").unwrap_or("no") == "yes";
 
-  func.access = AccessModifier::from_str(elem.attr("prot").unwrap()).unwrap();
-
   func.name = elem.get_child("name", AnyNS).unwrap().text();
+  func.definition = elem.get_child("definition", AnyNS).unwrap().text();
+  func.return_type = elem.get_child("type", AnyNS).unwrap().text();
+  func.args = elem.get_child("argsstring", AnyNS).unwrap().text();
+
   if let Some(qname) = elem.get_child("qualifiedname", AnyNS) {
     func.qualified_name = qname.text();
   }
-
-  func.definition = elem.get_child("definition", AnyNS).unwrap().text();
-  func.return_type = elem.get_child("type", AnyNS).unwrap().text();
-
-  func.args = elem.get_child("argsstring", AnyNS).unwrap().text();
 
   if let Some(args) = elem.get_child("templateparamlist", AnyNS) {
     func.template_args = parse_template_args(args);
   }
 
   // Parse parameter names, even if they may be undocumented
-  for child in elem.children().filter(|x| x.is("param", AnyNS)) {
-    if let Some(name) = child.get_child("declname", AnyNS) {
-      let text = name.text();
+  for child in elem.children().filter(|e| e.is("param", AnyNS)) {
+    if let Some(decl_name) = child.get_child("declname", AnyNS) {
+      let name = decl_name.text();
 
       // Information is occasionally duplicated, such as in namespace and group files
-      if !func.parameter_names.contains(&text) {
-        func.parameter_names.push(text);
+      if !func.parameter_names.contains(&name) {
+        func.parameter_names.push(name);
       }
     }
   }
@@ -270,6 +255,7 @@ fn parse_variable_definition(elem: &Element, var: &mut Variable)
 fn parse_compound_definition(element: &Element, registry: &mut Registry)
 {
   let kind = element.attr("kind").unwrap();
+
   if kind == "file" || kind == "namespace" {
     return;
   }
@@ -319,7 +305,7 @@ fn parse_compound_definition(element: &Element, registry: &mut Registry)
           class.template_args = parse_template_args(elem);
         }
       }
-      _ => (),
+      _ => ()
     }
   }
 }
@@ -330,7 +316,7 @@ fn parse_generic_file(file_path: &PathBuf, registry: &mut Registry)
     println!("Parsing file {}", file_path.display());
 
     let root_element = parse_xml_file(&file_path);
-    for elem in root_element.children().filter(|x| x.is("compounddef", AnyNS)) {
+    for elem in root_element.children().filter(|e| e.is("compounddef", AnyNS)) {
       parse_compound_definition(elem, registry);
     }
   }
@@ -368,10 +354,9 @@ fn parse_class_declaration(registry: &mut Registry,
                            name: &String,
                            is_struct: bool)
 {
-  let reg = registry.borrow_mut();
-  reg.classes.insert(ref_id.to_owned(), Class::new(is_struct));
+  registry.classes.insert(ref_id.to_owned(), Class::new(is_struct));
 
-  let class = reg.classes.get_mut(ref_id).unwrap();
+  let class = registry.classes.get_mut(ref_id).unwrap();
   class.unqualified_name = name.split("::").last().unwrap().to_owned();
 }
 
@@ -379,12 +364,13 @@ fn parse_compound_declaration(registry: &mut Registry, element: &Element)
 {
   let compound_id = element.attr("refid").unwrap().to_owned();
 
-  let mut name = String::from("?");
-  if let Some(name_elem) = element.get_child("name", AnyNS) {
-    name = name_elem.text();
-  }
+  let name = match element.get_child("name", AnyNS) {
+    Some(name) => name.text(),
+    None => String::from("?")
+  };
 
   let kind = CompoundKind::from_str(element.attr("kind").unwrap()).unwrap();
+
   match kind {
     CLASS => parse_class_declaration(registry, &compound_id, &name, false),
     STRUCT => parse_class_declaration(registry, &compound_id, &name, true),
@@ -393,26 +379,21 @@ fn parse_compound_declaration(registry: &mut Registry, element: &Element)
 
   registry.add_compound(compound_id.to_owned(), kind, name);
 
-  for child in element.children() {
-    if child.name() == "member" {
-      parse_member_declaration(registry, child, &compound_id);
-    }
+  for member in element.children().filter(|x| x.is("member", AnyNS)) {
+    parse_member_declaration(registry, member, &compound_id);
   }
 }
 
 fn parse_index_file(input_dir: &PathBuf) -> Registry
 {
+  let mut registry = Registry::new();
+
   let index_file = input_dir.join("index.xml");
   // println!("Parsing index file {}", index_file.display());
 
   let root_element = parse_xml_file(&index_file);
-  let mut registry = Registry::new();
-
-  for child in root_element.children() {
-    match child.name() {
-      "compound" => parse_compound_declaration(&mut registry, child),
-      _name => (), //println!("Ignoring element with name: {}", name)
-    }
+  for decl in root_element.children().filter(|x| x.is("compound", AnyNS)) {
+    parse_compound_declaration(&mut registry, decl);
   }
 
   return registry;
@@ -428,7 +409,7 @@ pub fn parse_xml(input_dir: &PathBuf) -> Registry
   for e in fs::read_dir(input_dir).unwrap() {
     match e {
       Ok(entry) => parse_generic_file(&entry.path(), &mut registry),
-      Err(x) => println!("Error encountered when iterating input directory: {}", x),
+      Err(err) => println!("Error encountered when iterating input directory: {}", err),
     }
   }
 
