@@ -22,7 +22,7 @@ struct Args {
 
 fn main() -> io::Result<()> {
   let args = Args::parse();
-  let input_dir: PathBuf = Path::new(&args.input_dir).absolutize()?.to_path_buf();
+  let input_dir = Path::new(&args.input_dir).absolutize()?.to_path_buf();
   let output_dir = Path::new(&args.output_dir).absolutize()?.to_path_buf();
 
   assert!(input_dir.is_absolute());
