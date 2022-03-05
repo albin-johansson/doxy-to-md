@@ -69,6 +69,17 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
     }
   }
 
+  if !func.docs.notes.is_empty() {
+    for note in &func.docs.notes {
+      write!(file, "\n!!! note\n")?;
+      write!(file, "    {}\n", note)?;
+    }
+  }
+
+  if func.is_member {
+    write!(file, "\n*This is a {} function.*\n", func.access)?;
+  }
+
   if !func.parameter_names.is_empty() {
     write!(file, "\n**Parameters**\n\n")?;
 
@@ -95,10 +106,6 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
   if !func.is_void_or_ctor() {
     write!(file, "\n**Returns**\n\n")?;
     write!(file, "{}\n", &func.docs.returns)?;
-  }
-
-  if func.is_member {
-    write!(file, "\n*This is a {} function.*\n", func.access)?;
   }
 
   write!(file, "\n```C++\n")?;
