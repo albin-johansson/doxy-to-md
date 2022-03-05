@@ -83,8 +83,9 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
     for name in &func.parameter_names {
       write!(file, "* `{}`", name)?;
 
-      if let Some(desc) = func.docs.parameters.get(name) {
-        write!(file, " {}", desc)?;
+      match func.docs.parameters.get(name) {
+        Some(desc) => write!(file, " {}", desc)?,
+        None => write!(file, " N/A")?
       }
 
       write!(file, "\n")?;
