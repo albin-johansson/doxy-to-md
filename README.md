@@ -37,5 +37,5 @@ the generated Markdown files will go.
 The output directory will be created if it does not exist by the time `doxy-to-md` is executed.
 
 ```shell
-./doxy-to-md -i /users/foo/my-project/doxygen-out/xml -o /users/foo/my-project/docs
+./doxy-to-md -i path/to/doxygen/xml -o output/md
 ```
