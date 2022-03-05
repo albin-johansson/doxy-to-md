@@ -4,6 +4,7 @@ use crate::d2m::parser;
 use crate::d2m::generator;
 
 use std::fs;
+use std::io;
 use std::path::PathBuf;
 use clap::Parser;
 
@@ -17,7 +18,7 @@ struct Args {
     output_dir: String,
 }
 
-fn main() {
+fn main() -> io::Result<()> {
     let args = Args::parse();
     let input_dir = PathBuf::from(&args.input_dir);
     let output_dir = PathBuf::from(&args.output_dir);
@@ -38,9 +39,9 @@ fn main() {
     }
 
     fs::create_dir_all(&output_dir).unwrap();
-    fs::create_dir_all(output_dir.join("groups")).unwrap();
-    fs::create_dir_all(output_dir.join("classes")).unwrap();
+    fs::create_dir_all(output_dir.join("groups"))?;
+    fs::create_dir_all(output_dir.join("classes"))?;
 
-    let index = parser::parse_xml(&input_dir);
-    generator::generate_markdown(&output_dir, &index).unwrap();
+    let registry = parser::parse_xml(&input_dir);
+    return generator::generate_markdown(&output_dir, &registry);
 }
