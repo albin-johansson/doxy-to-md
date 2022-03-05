@@ -1,5 +1,6 @@
 use std::borrow::BorrowMut;
 use std::fs;
+use std::iter;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -144,11 +145,14 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
   let mut new_args = String::with_capacity(func.args.len());
   let mut first = true;
 
+  let alignment_offset = func.return_type.len() + func.name.len() + 1;
+
   for arg in head.split(",").filter(|x| !x.is_empty()) {
     let is_pointer = arg.contains("*") || arg.contains("&");
 
     if !first {
-      new_args.push(',');
+      new_args += ",\n";
+      new_args += iter::repeat(" ").take(alignment_offset).collect::<String>().as_str();
     }
 
     if !is_pointer && arg.contains("const") {
