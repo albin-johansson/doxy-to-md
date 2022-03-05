@@ -54,7 +54,7 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
 
   if !func.docs.brief.is_empty() {
     for docs in &func.docs.brief {
-      write!(file, "\n{}\n", docs)?;
+      write!(file, "\n**Synopsis**: {}\n", docs)?;
     }
   } else {
     write!(file, "\nThis function has no brief documentation.\n")?;
