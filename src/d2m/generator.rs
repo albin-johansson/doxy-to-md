@@ -61,7 +61,6 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
   }
 
   if !func.docs.details.is_empty() {
-    write!(file, "\n*Detailed Documentation*\n")?;
     for docs in &func.docs.details {
       write!(file, "\n{}\n", docs)?;
     }
