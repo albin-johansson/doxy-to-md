@@ -38,12 +38,12 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
     let mut head = String::new();
     let mut tail = String::new();
     if uses_trailing_return {
-        let mut separated = func.arguments.split("->");
+        let mut separated = func.args.split("->");
         head = separated.next().unwrap().to_owned();
         tail = separated.next().unwrap().to_owned();
     }
 
-    let mut new_args = String::with_capacity(func.arguments.len());
+    let mut new_args = String::with_capacity(func.args.len());
     let mut first = true;
 
     for arg in head.split(",") {
@@ -69,7 +69,7 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
 
     // new_args.remove(new_args.len() - 1);
 
-    func.arguments = new_args;
+    func.args = new_args;
 }
 
 fn simplify_function_noexcept_specifier(func: &mut Function)
@@ -90,9 +90,9 @@ fn parse_function_definition(elem: &Element, func: &mut Function)
     func.qualified_name = elem.get_child("qualifiedname", NSChoice::Any).unwrap().text();
     func.definition = elem.get_child("definition", NSChoice::Any).unwrap().text();
     func.return_type = elem.get_child("type", NSChoice::Any).unwrap().text();
-    func.arguments = elem.get_child("argsstring", NSChoice::Any).unwrap().text();
 
     func.access = AccessModifier::from_str(elem.attr("prot").unwrap()).unwrap();
+    func.args = elem.get_child("argsstring", NSChoice::Any).unwrap().text();
 
     // TODO func.template_parameters =
 

@@ -65,10 +65,12 @@ pub struct Function {
     pub name: String,
     pub qualified_name: String,
     pub return_type: String,
-    pub template_parameters: String,
-    pub arguments: String,
+    pub args: String,
+    pub template_args: Vec<String>,
     pub definition: String,
     pub access: AccessModifier,
+    pub brief_docs: Vec<String>,
+    pub detailed_docs: Vec<String>,
     pub is_static: bool,
     pub is_const: bool,
     pub is_inline: bool,
@@ -83,11 +85,13 @@ impl Function {
         Self {
             name: String::from("?"),
             qualified_name: String::from("?"),
-            return_type: String::from("?"),
-            template_parameters: String::from("?"),
-            arguments: String::from("?"),
+            return_type: String::new(),
+            args: String::from("?"),
+            template_args: Vec::new(),
             definition: String::from("?"),
             access: PRIVATE,
+            brief_docs: Vec::new(),
+            detailed_docs: Vec::new(),
             is_static: false,
             is_const: false,
             is_inline: false,
@@ -102,6 +106,7 @@ impl Function {
 #[derive(Debug)]
 pub struct Class {
     pub unqualified_name: String,
+    pub template_args: Vec<String>,
     pub is_struct: bool,
 }
 
@@ -109,6 +114,7 @@ impl Class {
     pub fn new(is_struct: bool) -> Self {
         Self {
             unqualified_name: String::from("?"),
+            template_args: Vec::new(),
             is_struct,
         }
     }
