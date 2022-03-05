@@ -106,6 +106,10 @@ fn parse_comment(elem: &Element) -> Comment
                 assert!(comment.exceptions.is_empty());
                 comment.exceptions = parse_parameter_list(parameter_list);
               }
+              "templateparam" => {
+                assert!(comment.template_parameters.is_empty());
+                comment.template_parameters = parse_parameter_list(parameter_list);
+              }
               kind => println!("Ignoring parameter list of type '{}'", kind)
             }
           }

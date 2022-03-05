@@ -77,6 +77,18 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
     write!(file, "\n*This is a {} function.*\n", func.access)?;
   }
 
+  if !func.docs.template_parameters.is_empty() {
+    write!(file, "\n**Template Parameters**\n\n")?;
+
+    for (param_name, param_desc) in &func.docs.template_parameters {
+      write!(file, "* `{}` {}\n",
+             param_name,
+             if param_desc.is_empty() { "N/A" } else { param_desc })?;
+    }
+
+    write!(file, "\n")?;
+  }
+
   if !func.parameter_names.is_empty() {
     write!(file, "\n**Parameters**\n\n")?;
 
