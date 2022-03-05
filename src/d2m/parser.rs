@@ -227,7 +227,7 @@ fn parse_class_declaration(registry: &mut Registry, ref_id: &RefID, name: &Strin
     class.unqualified_name = name.split("::").last().unwrap().to_owned();
 }
 
-fn parse_compound_declaration(mut registry: &mut Registry, element: &Element)
+fn parse_compound_declaration(registry: &mut Registry, element: &Element)
 {
     let ref_id: RefID = element.attr("refid").unwrap().to_owned();
 
