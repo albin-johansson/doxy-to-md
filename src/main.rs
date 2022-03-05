@@ -2,7 +2,7 @@ mod d2m;
 
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use clap::Parser;
 use path_absolutize::*;
