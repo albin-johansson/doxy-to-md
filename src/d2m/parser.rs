@@ -192,7 +192,7 @@ fn parse_generic_file(file_path: &PathBuf, registry: &mut Registry)
 
 fn parse_member_declaration(registry: &mut Registry, element: &Element, parent_id: &RefID)
 {
-    let mut parent = registry.compounds.get_mut(parent_id).unwrap();
+    let parent = registry.compounds.get_mut(parent_id).unwrap();
     let ref_id: RefID = element.attr("refid").unwrap().to_owned();
 
     match element.attr("kind") {
