@@ -83,6 +83,15 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
     }
   }
 
+  if !func.docs.exceptions.is_empty() {
+    write!(file, "\n**Exceptions**\n\n")?;
+    for (name, desc) in &func.docs.exceptions {
+      write!(file, "* `{}` {}\n", name, desc)?;
+    }
+
+    write!(file, "\n")?;
+  }
+
   if !func.is_void_or_ctor() {
     write!(file, "\n**Returns**\n\n")?;
     write!(file, "{}\n", &func.docs.returns)?;
