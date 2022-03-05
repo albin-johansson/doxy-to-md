@@ -83,7 +83,7 @@ fn parse_function_definition(elem: &Element, func: &mut Function)
     func.is_const = elem.attr("const").unwrap() == "yes";
     func.is_explicit = elem.attr("explicit").unwrap() == "yes";
     func.is_inline = elem.attr("inline").unwrap() == "yes";
-    func.is_virtual = elem.attr("virt").unwrap() == "yes";
+    func.is_virtual = elem.attr("virt").unwrap() != "non-virtual";
     func.is_noexcept = elem.attr("const").unwrap_or("no") == "yes";
 
     func.name = elem.get_child("name", NSChoice::Any).unwrap().text();
