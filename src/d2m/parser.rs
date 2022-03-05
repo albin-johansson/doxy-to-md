@@ -31,6 +31,55 @@ fn parse_compound_kind(kind: Option<&str>) -> CompoundKind
     };
 }
 
+fn parse_brief_docs(elem: &Element) -> Vec<String>
+{
+    assert_eq!(elem.name(), "briefdescription");
+
+    let mut docs = Vec::new();
+
+    for child in elem.children() {
+        if child.name() == "para" {
+            docs.push(child.text());
+        }
+    }
+
+    return docs;
+}
+
+fn parse_detailed_docs(elem: &Element) -> Vec<String>
+{
+    assert_eq!(elem.name(), "detaileddescription");
+
+    let mut docs = Vec::new();
+
+    for child in elem.children() {
+        if child.name() == "para" {
+            if child.has_child("parameterlist", NSChoice::Any) {
+                // TODO
+            } else {
+                docs.push(child.text().replace('\n', " "));
+            }
+        }
+    }
+
+    return docs;
+}
+
+fn parse_template_args(elem: &Element) -> Vec<String>
+{
+    let mut args = Vec::new();
+
+    for param in elem.children() {
+        if param.name() == "param" {
+            if let Some(name) = param.get_child("type", NSChoice::Any) {
+                args.push(name.text());
+            }
+        }
+    }
+
+    return args;
+}
+
 fn remove_redundant_const_from_function_parameters(func: &mut Function)
 {
     let uses_trailing_return = func.return_type == "auto";
@@ -86,15 +135,29 @@ fn parse_function_definition(elem: &Element, func: &mut Function)
     func.is_virtual = elem.attr("virt").unwrap() != "non-virtual";
     func.is_noexcept = elem.attr("const").unwrap_or("no") == "yes";
 
+    func.access = AccessModifier::from_str(elem.attr("prot").unwrap()).unwrap();
+
     func.name = elem.get_child("name", NSChoice::Any).unwrap().text();
-    func.qualified_name = elem.get_child("qualifiedname", NSChoice::Any).unwrap().text();
+    if let Some(qname) = elem.get_child("qualifiedname", NSChoice::Any) {
+        func.qualified_name = qname.text();
+    }
+
     func.definition = elem.get_child("definition", NSChoice::Any).unwrap().text();
     func.return_type = elem.get_child("type", NSChoice::Any).unwrap().text();
 
-    func.access = AccessModifier::from_str(elem.attr("prot").unwrap()).unwrap();
     func.args = elem.get_child("argsstring", NSChoice::Any).unwrap().text();
 
-    // TODO func.template_parameters =
+    if let Some(args) = elem.get_child("templateparamlist", NSChoice::Any) {
+        func.template_args = parse_template_args(args);
+    }
+
+    if let Some(brief) = elem.get_child("briefdescription", NSChoice::Any) {
+        func.brief_docs = parse_brief_docs(&brief);
+    }
+
+    if let Some(details) = elem.get_child("detaileddescription", NSChoice::Any) {
+        func.detailed_docs = parse_detailed_docs(&details);
+    }
 
     remove_redundant_const_from_function_parameters(func);
     simplify_function_noexcept_specifier(func);
@@ -126,8 +189,8 @@ fn parse_compound_definition(element: &Element, registry: &mut Registry)
         match elem.name() {
             "compoundname" => (), // Do nothing
             "title" => (),        // Do nothing
-            "briefdescription" => (),
-            "detaileddescription" => (),
+            "briefdescription" => compound.brief_docs = parse_brief_docs(elem),
+            "detaileddescription" => compound.detailed_docs = parse_detailed_docs(elem),
             "innergroup" => {
                 if let Some(id) = elem.attr("refid") {
                     compound.groups.push(id.to_owned());
@@ -166,9 +229,13 @@ fn parse_compound_definition(element: &Element, registry: &mut Registry)
                     let mut var = registry.variables.get_mut(&ref_id).unwrap();
                     parse_variable_definition(elem, &mut var);
                 }
-                //
-                //     elif kind == 'define':
-                //         compound.macros.append(ref_id)
+
+                // TODO enum
+            }
+            "templateparamlist" => {
+                if let Some(class) = registry.classes.get_mut(ref_id) {
+                    class.template_args = parse_template_args(elem);
+                }
             }
             _ => ()
         }
