@@ -157,6 +157,8 @@ pub struct Compound {
     pub functions: Vec<RefID>,
     pub variables: Vec<RefID>,
     pub defines: Vec<RefID>,
+    pub brief_docs: Vec<String>,
+    pub detailed_docs: Vec<String>,
 }
 
 impl Compound {
@@ -171,6 +173,8 @@ impl Compound {
             functions: Vec::new(),
             variables: Vec::new(),
             defines: Vec::new(),
+            brief_docs: Vec::new(),
+            detailed_docs: Vec::new(),
         }
     }
 }
