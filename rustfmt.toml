@@ -1,0 +1,4 @@
+tab_spaces=2
+max_width=100
+brace_style="AlwaysNextLine"
+indent_style="Visual"
