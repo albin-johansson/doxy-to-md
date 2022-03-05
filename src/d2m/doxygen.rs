@@ -111,13 +111,13 @@ pub struct Function {
 impl Function {
   pub fn new(is_member: bool) -> Self {
     Self {
-      name: String::from("?"),
-      qualified_name: String::from("?"),
+      name: String::new(),
+      qualified_name: String::new(),
       return_type: String::new(),
-      args: String::from("?"),
+      args: String::new(),
       parameter_names: Vec::new(),
       template_args: Vec::new(),
-      definition: String::from("?"),
+      definition: String::new(),
       access: PRIVATE,
       docs: Comment::new(),
       is_static: false,
