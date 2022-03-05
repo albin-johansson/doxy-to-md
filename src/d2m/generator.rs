@@ -168,7 +168,7 @@ fn generate_class_file(destination: &PathBuf,
       write!(file, "\n{}\n", par)?;
     }
 
-    write!(file, "\n## Member Functions\n")?;
+    write!(file, "\n## Members\n")?;
 
     for func_id in &compound.functions {
       let func = registry.functions.get(func_id).unwrap();
