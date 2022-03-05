@@ -44,16 +44,41 @@ fn generate_index_file(output_dir: &PathBuf, registry: &Registry) -> io::Result<
 
 fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<()>
 {
+    write!(file, "\n---\n")?;
     write!(file, "\n### **{}**\n", &func.name)?;
 
     // TODO brief, details, template parameters, parameter docs, exceptions
 
+    if !func.brief_docs.is_empty() {
+        for docs in &func.brief_docs {
+            write!(file, "\n{}\n", docs)?;
+        }
+    } else {
+        write!(file, "\nThis function has no brief documentation.\n")?;
+    }
+
+    if !func.detailed_docs.is_empty() {
+        write!(file, "\n*Detailed Documentation*\n")?;
+        for docs in &func.detailed_docs {
+            write!(file, "\n{}\n", docs)?;
+        }
+    }
+
     if func.is_member {
-        write!(file, "\n*This is a {} function.*\n", func.access)?;
+        write!(file, "\n*This is a `{}` function.*\n", func.access)?;
     }
 
     write!(file, "\n```C++\n")?;
-    write!(file, "{} {}{};\n", &func.return_type, &func.name, &func.arguments)?;
+    if !func.template_args.is_empty() {
+        write!(file, "template <")?;
+        let mut first = true;
+        for arg in &func.template_args {
+            write!(file, "{}{}", if !first { ", " } else { "" }, arg)?;
+            first = false;
+        }
+        write!(file, ">\n")?;
+    }
+    write!(file, "{}{};\n", &func.definition, &func.args)?;
     write!(file, "```\n")?;
 
     return Ok(());
@@ -73,6 +98,13 @@ fn generate_class_file(destination: &PathBuf,
         write!(file, "# {}\n", &compound.name)?;
 
         write!(file, "\n```C++\n")?;
+        if !class.template_args.is_empty() {
+            write!(file, "template <")?;
+            for arg in &class.template_args {
+                write!(file, "{}", arg)?;
+            }
+            write!(file, ">\n")?;
+        }
         write!(file, "{} {};\n",
                if class.is_struct { "struct" } else { "class" },
                &class.unqualified_name)?;
@@ -104,6 +136,14 @@ fn generate_group_file(destination: &PathBuf,
     let file = File::create(destination);
     if let Ok(mut file) = file {
         write!(file, "# {}\n", &compound.title)?;
+
+        for par in &compound.brief_docs {
+            write!(file, "\n{}\n", &par)?;
+        }
+
+        for par in &compound.detailed_docs {
+            write!(file, "\n{}\n", &par)?;
+        }
 
         write!(file, "\n## Groups\n\n")?;
         if compound.groups.is_empty() {
