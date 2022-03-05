@@ -124,6 +124,10 @@ fn parse_template_args(elem: &Element) -> Vec<String>
 
 fn remove_redundant_const_from_function_parameters(func: &mut Function)
 {
+  if func.parameter_names.is_empty() {
+    return;  // No need to process functions with zero arguments
+  }
+
   let uses_trailing_return = func.return_type == "auto";
 
   let mut head = String::new();
@@ -133,11 +137,14 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
     head = separated.next().unwrap().to_owned();
     tail = separated.next().unwrap().to_owned();
   }
+  else {
+    head = func.args.to_owned();
+  }
 
   let mut new_args = String::with_capacity(func.args.len());
   let mut first = true;
 
-  for arg in head.split(",") {
+  for arg in head.split(",").filter(|x| !x.is_empty()) {
     let is_pointer = arg.contains("*") || arg.contains("&");
 
     if !first {
@@ -157,8 +164,6 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
     new_args.push_str("->");
     new_args.push_str(tail.as_str());
   }
-
-  // new_args.remove(new_args.len() - 1);
 
   func.args = new_args;
 }
