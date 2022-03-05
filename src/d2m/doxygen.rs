@@ -46,7 +46,7 @@ pub struct Comment {
   pub details: Vec<String>,
   pub parameters: HashMap<String, String>,
   pub returns: String,
-  pub exceptions: Vec<String>,
+  pub exceptions: HashMap<String, String>,
   pub see_also: Vec<String>,
   pub notes: Vec<String>,
 }
@@ -58,7 +58,7 @@ impl Comment {
       details: Vec::new(),
       parameters: HashMap::new(),
       returns: String::new(),
-      exceptions: Vec::new(),
+      exceptions: HashMap::new(),
       see_also: Vec::new(),
       notes: Vec::new(),
     }

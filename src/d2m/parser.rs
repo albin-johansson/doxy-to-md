@@ -1,4 +1,5 @@
 use std::borrow::BorrowMut;
+use std::collections::HashMap;
 use std::fs;
 use std::iter;
 use std::path::PathBuf;
@@ -56,6 +57,28 @@ fn parse_text(root: &Element) -> String
   return content;
 }
 
+fn parse_parameter_list(elem: &Element) -> HashMap<String, String>
+{
+  assert_eq!(elem.name(), "parameterlist");
+  let mut entries = HashMap::new();
+
+  for item in elem.children().filter(|x| x.is("parameteritem", AnyNS)) {
+    let mut name = None;
+
+    if let Some(list) = item.get_child("parameternamelist", AnyNS) {
+      if let Some(parameter_name) = list.get_child("parametername", AnyNS) {
+        name = Some(parse_text(parameter_name));
+      }
+    }
+
+    if let Some(desc) = item.get_child("parameterdescription", AnyNS) {
+      entries.insert(name.unwrap(), parse_text(desc));
+    }
+  }
+
+  return entries;
+}
+
 fn parse_comment(elem: &Element) -> Comment
 {
   let mut comment = Comment::new();
@@ -67,42 +90,42 @@ fn parse_comment(elem: &Element) -> Comment
   }
 
   if let Some(detailed) = elem.get_child("detaileddescription", AnyNS) {
-    for para in detailed.children().filter(|x| x.is("para", AnyNS)) {
-      comment.details.push(parse_text(para));
+    for child in detailed.children() {
+      match child.name() {
+        "para" => {
+          if let Some(parameter_list) = child.get_child("parameterlist", AnyNS) {
+            match parameter_list.attr("kind").unwrap() {
+              "param" => {
+                assert!(comment.parameters.is_empty());
+                comment.parameters = parse_parameter_list(parameter_list);
+              }
+              "exception" => {
+                assert!(comment.exceptions.is_empty());
+                comment.exceptions = parse_parameter_list(parameter_list);
+              }
+              s => println!("Ignoring parameter list of type '{}'", s)
+            }
+          } else if let Some(simple_section) = child.get_child("simplesect", AnyNS) {
+            match simple_section.attr("kind").unwrap() {
+              "return" => {
+                if let Some(para) = simple_section.get_child("para", AnyNS) {
+                  comment.returns = parse_text(para);
+                }
+              }
+              "note" | "remark" => {
+                if let Some(para) = simple_section.get_child("para", AnyNS) {
+                  comment.notes.push(parse_text(para));
+                }
+              }
+              s => println!("Ignoring simple section with tag '{}'", s),
+            }
+          } else {
+            comment.details.push(parse_text(child))
+          }
+        }
+        s => println!("Ignoring {}", s)
+      }
     }
-
-    // for para in detailed.children().filter(|x| x.is("para", AnyNS)) {
-    //   if let Some(list) = para.get_child("parameterlist", AnyNS) {
-    //     let kind = list.attr("kind").unwrap();
-    //     if kind == "param" {
-    //       for item in list.children().filter(|x| x.is("parameteritem", AnyNS)) {
-    //         let mut name = None;
-    //
-    //         if let Some(list) = item.get_child("parameternamelist", AnyNS) {
-    //           if let Some(parameter_name) = list.get_child("parametername", AnyNS) {
-    //             name = Some(parameter_name.text());
-    //           }
-    //         }
-    //
-    //         if let Some(desc) = item.get_child("parameterdescription", AnyNS) {
-    //           let mut para = parse_para(desc);
-    //           comment
-    //               .parameters
-    //               .insert(name.unwrap(), String::from(para.first().unwrap()));
-    //         }
-    //       }
-    //     }
-    //   }
-    //
-    //   if let Some(simple_section) = para.get_child("simplesect", AnyNS) {
-    //     let kind = simple_section.attr("kind").unwrap();
-    //     if kind == "return" {
-    //       if let Some(para) = simple_section.get_child("para", AnyNS) {
-    //         comment.returns = para.text();
-    //       }
-    //     }
-    //   }
-    // }
   }
 
   return comment;
