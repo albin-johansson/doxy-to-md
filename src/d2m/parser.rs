@@ -103,7 +103,7 @@ fn parse_comment(elem: &Element) -> Comment
                 assert!(comment.exceptions.is_empty());
                 comment.exceptions = parse_parameter_list(parameter_list);
               }
-              s => println!("Ignoring parameter list of type '{}'", s)
+              kind => println!("Ignoring parameter list of type '{}'", kind)
             }
           } else if let Some(simple_section) = child.get_child("simplesect", AnyNS) {
             match simple_section.attr("kind").unwrap() {
