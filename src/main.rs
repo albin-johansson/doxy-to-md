@@ -43,5 +43,5 @@ fn main() -> io::Result<()> {
   fs::create_dir_all(output_dir.join("classes"))?;
 
   let registry = parser::parse_xml(&input_dir);
-  return generator::generate_markdown(&output_dir, &registry);
+  generator::generate_markdown(&output_dir, &registry)
 }
