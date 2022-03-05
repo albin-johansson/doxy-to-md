@@ -47,7 +47,8 @@ fn parse_text(root: &Element) -> String
           // TODO use
           let _referenced_id = elem.attr("refid").unwrap();
           let _referenced_kind = elem.attr("kindref").unwrap();
-          content += format!("[{}](foo.md)", parse_text(elem)).as_str();
+          // content += format!("[{}](foo.md)", parse_text(elem)).as_str();
+          content += format!("{}", parse_text(elem)).as_str();
         }
         _ => ()
       }
