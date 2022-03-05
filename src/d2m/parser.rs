@@ -93,6 +93,9 @@ fn parse_comment(elem: &Element) -> Comment
     for child in detailed.children() {
       match child.name() {
         "para" => {
+          // The parse_text function ignores parameter lists and sections
+          comment.details.push(parse_text(child));
+
           if let Some(parameter_list) = child.get_child("parameterlist", AnyNS) {
             match parameter_list.attr("kind").unwrap() {
               "param" => {
@@ -105,7 +108,9 @@ fn parse_comment(elem: &Element) -> Comment
               }
               kind => println!("Ignoring parameter list of type '{}'", kind)
             }
-          } else if let Some(simple_section) = child.get_child("simplesect", AnyNS) {
+          }
+
+          if let Some(simple_section) = child.get_child("simplesect", AnyNS) {
             match simple_section.attr("kind").unwrap() {
               "return" => {
                 if let Some(para) = simple_section.get_child("para", AnyNS) {
@@ -124,8 +129,6 @@ fn parse_comment(elem: &Element) -> Comment
               }
               s => println!("Ignoring simple section with tag '{}'", s),
             }
-          } else {
-            comment.details.push(parse_text(child))
           }
         }
         s => println!("Ignoring {}", s)
