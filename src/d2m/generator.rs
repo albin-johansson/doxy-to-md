@@ -92,10 +92,6 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
     write!(file, "\n*This is a {} function.*\n", func.access)?;
   }
 
-  if func.is_void_or_ctor() {
-    let i = 42;
-  }
-
   write!(file, "\n```C++\n")?;
   if !func.template_args.is_empty() {
     write!(file, "template <")?;
