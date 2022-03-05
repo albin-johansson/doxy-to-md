@@ -119,6 +119,13 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
   write!(file, "{} {}{};\n", &func.return_type, &func.name, &func.args)?;
   write!(file, "```\n")?;
 
+  if !func.docs.see_also.is_empty() {
+    write!(file, "\n**See Also**\n\n")?;
+    for see in &func.docs.see_also {
+      write!(file, "* {}\n", see)?;
+    }
+  }
+
   return Ok(());
 }
 

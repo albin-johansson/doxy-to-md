@@ -117,6 +117,11 @@ fn parse_comment(elem: &Element) -> Comment
                   comment.notes.push(parse_text(para));
                 }
               }
+              "see" => {
+                if let Some(para) = simple_section.get_child("para", AnyNS) {
+                  comment.see_also.push(parse_text(para));
+                }
+              }
               s => println!("Ignoring simple section with tag '{}'", s),
             }
           } else {
