@@ -264,6 +264,7 @@ fn generate_group_file(destination: &PathBuf,
 
 pub fn generate_markdown(output_dir: &PathBuf, registry: &Registry) -> io::Result<()>
 {
+  let start_time = std::time::SystemTime::now();
   println!("Generating Markdown output...");
 
   generate_index_file(output_dir, registry)?;
@@ -280,6 +281,10 @@ pub fn generate_markdown(output_dir: &PathBuf, registry: &Registry) -> io::Resul
       generate_class_file(&dst, registry, compound_id, compound)?;
     }
   }
+
+  let end_time = std::time::SystemTime::now();
+  println!("Generated Markdown files in {} ms",
+           end_time.duration_since(start_time).unwrap().as_millis());
 
   return Ok(());
 }

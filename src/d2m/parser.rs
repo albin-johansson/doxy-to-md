@@ -428,7 +428,9 @@ fn parse_index_file(input_dir: &PathBuf) -> Registry
 
 pub fn parse_xml(input_dir: &PathBuf) -> Registry
 {
+  let start_time = std::time::SystemTime::now();
   println!("Parsing XML input...");
+
   let mut registry = parse_index_file(input_dir);
 
   for e in fs::read_dir(input_dir).unwrap() {
@@ -437,6 +439,10 @@ pub fn parse_xml(input_dir: &PathBuf) -> Registry
       Err(x) => println!("Error encountered when iterating input directory: {}", x),
     }
   }
+
+  let end_time = std::time::SystemTime::now();
+  println!("Parsed XML files in {} ms",
+           end_time.duration_since(start_time).unwrap().as_millis());
 
   return registry;
 }
