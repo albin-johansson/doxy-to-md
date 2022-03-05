@@ -133,10 +133,6 @@ impl Function {
       is_member,
     }
   }
-
-  pub fn is_void_or_ctor(&self) -> bool {
-    return self.return_type == "void" || self.return_type.is_empty();
-  }
 }
 
 #[derive(Debug)]
@@ -251,5 +247,12 @@ impl Registry {
       variables: HashMap::new(),
       defines: HashMap::new(),
     }
+  }
+
+  pub fn add_compound(&mut self, id: RefID, kind: CompoundKind, name: String) {
+    let mut compound = Compound::new();
+    compound.name = name;
+    compound.kind = kind;
+    self.compounds.insert(id, compound);
   }
 }

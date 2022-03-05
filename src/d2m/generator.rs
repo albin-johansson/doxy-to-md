@@ -100,7 +100,7 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
     write!(file, "\n")?;
   }
 
-  if !func.is_void_or_ctor() {
+  if !func.docs.returns.is_empty() {
     write!(file, "\n**Returns**\n\n")?;
     write!(file, "{}\n", &func.docs.returns)?;
   }

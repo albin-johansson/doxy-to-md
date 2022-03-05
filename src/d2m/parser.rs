@@ -264,20 +264,17 @@ fn parse_variable_definition(elem: &Element, var: &mut Variable)
 
 fn parse_compound_definition(element: &Element, registry: &mut Registry)
 {
-  let ref_id = element.attr("id").unwrap();
-
-  let mut compound = registry.compounds.get_mut(ref_id).unwrap();
-
-  if let Some(title) = element.get_child("title", AnyNS) {
-    compound.title = title.text();
+  let kind = element.attr("kind").unwrap();
+  if kind == "file" || kind == "namespace" {
+    return;
   }
+
+  let compound_id = element.attr("id").unwrap();
+  let mut compound = registry.compounds.get_mut(compound_id).unwrap();
 
   for elem in element.children() {
     match elem.name() {
-      "compoundname" => (), // Do nothing
-      "title" => (),        // Do nothing
-      // "briefdescription" => compound.brief_docs = parse_para(elem),
-      // "detaileddescription" => compound.detailed_docs = parse_para(elem),
+      "title" => compound.title = parse_text(elem),
       "innergroup" => {
         if let Some(id) = elem.attr("refid") {
           compound.groups.push(id.to_owned());
@@ -294,33 +291,26 @@ fn parse_compound_definition(element: &Element, registry: &mut Registry)
         }
       }
       "sectiondef" => {
-        for child in elem.children() {
-          if child.name() == "memberdef" {
-            let child_id: RefID = child.attr("id").unwrap().to_owned();
-            let kind = child.attr("kind").unwrap();
-            if kind == "function" {
-              let mut func = registry.functions.get_mut(&child_id).unwrap();
-              parse_function_definition(child, &mut func);
+        for member in elem.children().filter(|x| x.is("memberdef", AnyNS)) {
+          let member_id: RefID = member.attr("id").unwrap().to_owned();
+
+          match member.attr("kind").unwrap() {
+            "function" => {
+              let mut func = registry.functions.get_mut(&member_id).unwrap();
+              parse_function_definition(member, &mut func);
             }
+            "variable" => {
+              let mut var = registry.variables.get_mut(&member_id).unwrap();
+              parse_variable_definition(member, &mut var);
+            }
+            _ => ()
           }
-        }
-      }
-      "memberdef" => {
-        let ref_id: RefID = elem.attr("id").unwrap().to_owned();
-        let kind = elem.attr("kind").unwrap();
 
-        if kind == "function" {
-          let mut func = registry.functions.get_mut(&ref_id).unwrap();
-          parse_function_definition(elem, &mut func);
-        } else if kind == "variable" {
-          let mut var = registry.variables.get_mut(&ref_id).unwrap();
-          parse_variable_definition(elem, &mut var);
+          // TODO enum
         }
-
-        // TODO enum
       }
       "templateparamlist" => {
-        if let Some(class) = registry.classes.get_mut(ref_id) {
+        if let Some(class) = registry.classes.get_mut(compound_id) {
           class.template_args = parse_template_args(elem);
         }
       }
@@ -332,14 +322,11 @@ fn parse_compound_definition(element: &Element, registry: &mut Registry)
 fn parse_generic_file(file_path: &PathBuf, registry: &mut Registry)
 {
   if file_path.is_file() && file_path.file_name().unwrap() != "index.xml" {
-    // println!("Parsing file {}", file_path.display());
+    println!("Parsing file {}", file_path.display());
 
     let root_element = parse_xml_file(&file_path);
-    for child in root_element.children() {
-      match child.name() {
-        "compounddef" => parse_compound_definition(child, registry),
-        _name => (), //println!("Ignoring element with name: {}", name)
-      }
+    for elem in root_element.children().filter(|x| x.is("compounddef", AnyNS)) {
+      parse_compound_definition(elem, registry);
     }
   }
 }
@@ -347,32 +334,27 @@ fn parse_generic_file(file_path: &PathBuf, registry: &mut Registry)
 fn parse_member_declaration(registry: &mut Registry, element: &Element, parent_id: &RefID)
 {
   let parent = registry.compounds.get_mut(parent_id).unwrap();
-  let ref_id: RefID = element.attr("refid").unwrap().to_owned();
+  let member_id = element.attr("refid").unwrap().to_owned();
 
-  match element.attr("kind") {
-    Some("define") => {
-      registry.defines.insert(ref_id.to_owned(), Define::new());
-      parent.defines.push(ref_id.to_owned());
+  match element.attr("kind").unwrap() {
+    "define" => {
+      registry.defines.insert(member_id.to_owned(), Define::new());
+      parent.defines.push(member_id.to_owned());
     }
-    Some("friend") => {}
-    Some("typedef") => {}
-    Some("variable") => {
-      registry
-          .variables
-          .insert(ref_id.to_owned(), Variable::new());
-      parent.variables.push(ref_id.to_owned());
+    "friend" => {}
+    "typedef" => {}
+    "variable" => {
+      registry.variables.insert(member_id.to_owned(), Variable::new());
+      parent.variables.push(member_id.to_owned());
     }
-    Some("function") => {
-      registry.functions.insert(
-        ref_id.to_owned(),
-        Function::new(parent.kind == CLASS || parent.kind == STRUCT),
-      );
-      parent.functions.push(ref_id.to_owned());
+    "function" => {
+      registry.functions.insert(member_id.to_owned(),
+                                Function::new(parent.kind == CLASS || parent.kind == STRUCT));
+      parent.functions.push(member_id.to_owned());
     }
-    Some("enum") => {}
-    Some("enumvalue") => {}
-    Some(x) => panic!("Encountered unsupported member type: {}", x),
-    _ => panic!("Member declaration in index has no kind attribute!"),
+    "enum" => {}
+    "enumvalue" => {}
+    kind => println!("Ignoring member declaration of type '{}'", kind),
   };
 }
 
@@ -390,7 +372,7 @@ fn parse_class_declaration(registry: &mut Registry,
 
 fn parse_compound_declaration(registry: &mut Registry, element: &Element)
 {
-  let ref_id: RefID = element.attr("refid").unwrap().to_owned();
+  let compound_id = element.attr("refid").unwrap().to_owned();
 
   let mut name = String::from("?");
   if let Some(name_elem) = element.get_child("name", AnyNS) {
@@ -399,19 +381,16 @@ fn parse_compound_declaration(registry: &mut Registry, element: &Element)
 
   let kind = CompoundKind::from_str(element.attr("kind").unwrap()).unwrap();
   match kind {
-    CLASS => parse_class_declaration(registry, &ref_id, &name, false),
-    STRUCT => parse_class_declaration(registry, &ref_id, &name, true),
+    CLASS => parse_class_declaration(registry, &compound_id, &name, false),
+    STRUCT => parse_class_declaration(registry, &compound_id, &name, true),
     _ => (),
   }
 
-  registry.compounds.insert(ref_id.to_owned(), Compound::new());
-  let mut compound = registry.compounds.get_mut(&ref_id).unwrap();
-  compound.kind = kind;
-  compound.name = name;
+  registry.add_compound(compound_id.to_owned(), kind, name);
 
   for child in element.children() {
     if child.name() == "member" {
-      parse_member_declaration(registry, child, &ref_id);
+      parse_member_declaration(registry, child, &compound_id);
     }
   }
 }
