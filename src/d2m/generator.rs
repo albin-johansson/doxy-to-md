@@ -62,7 +62,7 @@ fn generate_template_parameter_docs(file: &mut File, parameters: &HashMap<String
 fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<()>
 {
   write!(file, "\n---\n")?;
-  write!(file, "\n### **{}**\n", &func.name)?;
+  write!(file, "\n### **{}**\n", &func.qualified_name)?;
 
   if !func.docs.brief.is_empty() {
     for docs in &func.docs.brief {
