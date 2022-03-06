@@ -53,7 +53,7 @@ fn parse_parameter_list(elem: &Element) -> HashMap<String, String>
   assert_eq!(elem.name(), "parameterlist");
   let mut entries = HashMap::new();
 
-  for item in elem.children().filter(|x| x.is("parameteritem", AnyNS)) {
+  for item in elem.children().filter(|e| e.is("parameteritem", AnyNS)) {
     let list = item.get_child("parameternamelist", AnyNS).unwrap();
 
     let name_elem = list.get_child("parametername", AnyNS).unwrap();
@@ -281,7 +281,7 @@ fn parse_compound_definition(element: &Element, registry: &mut Registry)
         }
       }
       "sectiondef" => {
-        for member in elem.children().filter(|x| x.is("memberdef", AnyNS)) {
+        for member in elem.children().filter(|e| e.is("memberdef", AnyNS)) {
           let member_id: RefID = member.attr("id").unwrap().to_owned();
 
           match member.attr("kind").unwrap() {
@@ -378,7 +378,7 @@ fn parse_compound_declaration(registry: &mut Registry, element: &Element)
 
   registry.add_compound(compound_id.to_owned(), kind, name);
 
-  for member in element.children().filter(|x| x.is("member", AnyNS)) {
+  for member in element.children().filter(|e| e.is("member", AnyNS)) {
     parse_member_declaration(registry, member, &compound_id);
   }
 }
@@ -391,7 +391,7 @@ fn parse_index_file(input_dir: &PathBuf) -> Registry
   // println!("Parsing index file {}", index_file.display());
 
   let root_element = parse_xml_file(&index_file);
-  for decl in root_element.children().filter(|x| x.is("compound", AnyNS)) {
+  for decl in root_element.children().filter(|e| e.is("compound", AnyNS)) {
     parse_compound_declaration(&mut registry, decl);
   }
 
