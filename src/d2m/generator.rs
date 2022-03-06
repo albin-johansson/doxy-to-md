@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, Write};
 use std::path::PathBuf;
 
-use crate::d2m::doxygen::CompoundKind::*;
 use crate::d2m::doxygen::{Compound, Function, RefID, Registry};
+use crate::d2m::doxygen::CompoundKind::*;
 
 fn generate_group_filename(name: &str) -> String
 {
@@ -35,16 +36,27 @@ fn generate_index_file(output_dir: &PathBuf, registry: &Registry) -> io::Result<
   for (_, compound) in &registry.compounds {
     // TODO arrange by group relations (subgroups)
     if compound.kind == GROUP {
-      write!(
-        file,
-        "* [{}](groups/{})\n",
-        &compound.title,
-        generate_group_filename(&compound.name)
-      )?;
+      write!(file, "* [{}](groups/{})\n", &compound.title, generate_group_filename(&compound.name))?;
     }
   }
 
-  return Ok(());
+  Ok(())
+}
+
+fn generate_template_parameter_docs(file: &mut File, parameters: &HashMap<String, String>)
+  -> io::Result<()>
+{
+  if !parameters.is_empty() {
+    write!(file, "\n**Template Parameters**\n\n")?;
+
+    for (name, info) in &parameters {
+      write!(file, "* `{}` {}\n", name, if info.is_empty() { "N/A" } else { info })?;
+    }
+
+    write!(file, "\n")?;
+  }
+
+  Ok(())
 }
 
 fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<()>
@@ -77,17 +89,7 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
     write!(file, "\n*This is a {} function.*\n", func.access)?;
   }
 
-  if !func.docs.template_parameters.is_empty() {
-    write!(file, "\n**Template Parameters**\n\n")?;
-
-    for (param_name, param_desc) in &func.docs.template_parameters {
-      write!(file, "* `{}` {}\n",
-             param_name,
-             if param_desc.is_empty() { "N/A" } else { param_desc })?;
-    }
-
-    write!(file, "\n")?;
-  }
+  generate_template_parameter_docs(file, &func.docs.template_parameters)?;
 
   if !func.parameter_names.is_empty() {
     write!(file, "\n**Parameters**\n\n")?;
@@ -106,6 +108,7 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
 
   if !func.docs.exceptions.is_empty() {
     write!(file, "\n**Exceptions**\n\n")?;
+
     for (name, desc) in &func.docs.exceptions {
       write!(file, "* `{}` {}\n", name, desc)?;
     }
@@ -138,7 +141,7 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
     }
   }
 
-  return Ok(());
+  Ok(())
 }
 
 fn generate_class_file(destination: &PathBuf,
@@ -162,12 +165,10 @@ fn generate_class_file(destination: &PathBuf,
       }
       write!(file, ">\n")?;
     }
-    write!(
-      file,
-      "{} {};\n",
-      if class.is_struct { "struct" } else { "class" },
-      &class.unqualified_name
-    )?;
+    write!(file,
+           "{} {};\n",
+           if class.is_struct { "struct" } else { "class" },
+           &class.unqualified_name)?;
     write!(file, "```\n")?;
 
     for par in &compound.brief_docs {
@@ -188,7 +189,7 @@ fn generate_class_file(destination: &PathBuf,
     }
   }
 
-  return Ok(());
+  Ok(())
 }
 
 fn generate_group_file(destination: &PathBuf,
@@ -220,22 +221,17 @@ fn generate_group_file(destination: &PathBuf,
 
     write!(file, "\n## Classes & Structs\n\n")?;
     if compound.classes.is_empty() {
-      write!(
-        file,
-        "There are no classes or structs associated with this group.\n"
-      )?;
+      write!(file, "There are no classes or structs associated with this group.\n")?;
     } else {
       for class_id in &compound.classes {
         let class = registry.classes.get(class_id).unwrap();
         let class_compound = registry.compounds.get(class_id).unwrap();
         let filename = get_class_filename(&class_compound.name);
-        write!(
-          file,
-          "* [{} {}](../classes/{})\n",
-          if class.is_struct { "struct" } else { "class" },
-          &class.unqualified_name,
-          &filename
-        )?;
+        write!(file,
+               "* [{} {}](../classes/{})\n",
+               if class.is_struct { "struct" } else { "class" },
+               &class.unqualified_name,
+               &filename)?;
       }
     }
 
@@ -243,10 +239,7 @@ fn generate_group_file(destination: &PathBuf,
     if compound.functions.is_empty() {
       write!(file, "There are no functions associated with this group.\n")?;
     } else {
-      write!(
-        file,
-        "These are the free functions associated with this group.\n"
-      )?;
+      write!(file, "These are the free functions associated with this group.\n")?;
       for func_id in &compound.functions {
         let func = registry.functions.get(func_id).unwrap();
         if !func.is_member {
@@ -276,7 +269,7 @@ fn generate_group_file(destination: &PathBuf,
     }
   }
 
-  return Ok(());
+  Ok(())
 }
 
 pub fn generate_markdown(output_dir: &PathBuf, registry: &Registry) -> io::Result<()>
@@ -303,5 +296,5 @@ pub fn generate_markdown(output_dir: &PathBuf, registry: &Registry) -> io::Resul
   println!("Generated Markdown files in {} ms",
            end_time.duration_since(start_time).unwrap().as_millis());
 
-  return Ok(());
+  Ok(())
 }
