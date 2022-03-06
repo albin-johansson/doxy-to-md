@@ -36,7 +36,7 @@ fn main() -> io::Result<()> {
   }
 
   // Makes sure that the directories we'll write to exist
-  fs::create_dir_all(&output_dir).unwrap();
+  fs::create_dir_all(&output_dir)?;
   fs::create_dir_all(output_dir.join("groups"))?;
   fs::create_dir_all(output_dir.join("classes"))?;
 
