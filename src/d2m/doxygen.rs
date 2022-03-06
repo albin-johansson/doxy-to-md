@@ -7,30 +7,31 @@ use AccessModifier::*;
 pub type RefID = String;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum AccessModifier {
+pub enum AccessModifier
+{
   PRIVATE,
   PROTECTED,
   PUBLIC,
 }
 
-impl fmt::Display for AccessModifier {
-  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-    write!(
-      f,
-      "{}",
-      match self {
-        PRIVATE => "private",
-        PROTECTED => "protected",
-        PUBLIC => "public",
-      }
-    )
+impl fmt::Display for AccessModifier
+{
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+  {
+    write!(f, "{}", match self {
+      PRIVATE => "private",
+      PROTECTED => "protected",
+      PUBLIC => "public",
+    })
   }
 }
 
-impl FromStr for AccessModifier {
+impl FromStr for AccessModifier
+{
   type Err = &'static str;
 
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
+  fn from_str(s: &str) -> Result<Self, Self::Err>
+  {
     match s {
       "private" => Ok(PRIVATE),
       "protected" => Ok(PROTECTED),
@@ -41,7 +42,8 @@ impl FromStr for AccessModifier {
 }
 
 #[derive(Debug)]
-pub struct Comment {
+pub struct Comment
+{
   pub brief: Vec<String>,
   pub details: Vec<String>,
   pub parameters: HashMap<String, String>,
@@ -54,8 +56,10 @@ pub struct Comment {
   pub notes: Vec<String>,
 }
 
-impl Comment {
-  pub fn new() -> Self {
+impl Comment
+{
+  pub fn new() -> Self
+  {
     Self {
       brief: Vec::new(),
       details: Vec::new(),
@@ -72,7 +76,8 @@ impl Comment {
 }
 
 #[derive(Debug)]
-pub struct Variable {
+pub struct Variable
+{
   pub name: String,
   pub definition: String,
   pub access: AccessModifier,
@@ -81,8 +86,10 @@ pub struct Variable {
   pub is_mutable: bool,
 }
 
-impl Variable {
-  pub fn new() -> Self {
+impl Variable
+{
+  pub fn new() -> Self
+  {
     Self {
       name: String::from("?"),
       definition: String::from("?"),
@@ -95,7 +102,8 @@ impl Variable {
 }
 
 #[derive(Debug)]
-pub struct Function {
+pub struct Function
+{
   pub name: String,
   pub qualified_name: String,
   pub return_type: String,
@@ -114,8 +122,10 @@ pub struct Function {
   pub is_member: bool,
 }
 
-impl Function {
-  pub fn new(is_member: bool) -> Self {
+impl Function
+{
+  pub fn new(is_member: bool) -> Self
+  {
     Self {
       name: String::new(),
       qualified_name: String::new(),
@@ -138,14 +148,17 @@ impl Function {
 }
 
 #[derive(Debug)]
-pub struct Class {
+pub struct Class
+{
   pub unqualified_name: String,
   pub template_args: Vec<String>,
   pub is_struct: bool,
 }
 
-impl Class {
-  pub fn new(is_struct: bool) -> Self {
+impl Class
+{
+  pub fn new(is_struct: bool) -> Self
+  {
     Self {
       unqualified_name: String::from("?"),
       template_args: Vec::new(),
@@ -155,12 +168,15 @@ impl Class {
 }
 
 #[derive(Debug)]
-pub struct Define {
+pub struct Define
+{
   pub name: String,
 }
 
-impl Define {
-  pub fn new() -> Self {
+impl Define
+{
+  pub fn new() -> Self
+  {
     Self {
       name: String::from("?"),
     }
@@ -168,7 +184,8 @@ impl Define {
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum CompoundKind {
+pub enum CompoundKind
+{
   UNKNOWN,
   FILE,
   DIRECTORY,
@@ -180,10 +197,12 @@ pub enum CompoundKind {
   GROUP,
 }
 
-impl FromStr for CompoundKind {
+impl FromStr for CompoundKind
+{
   type Err = &'static str;
 
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
+  fn from_str(s: &str) -> Result<Self, Self::Err>
+  {
     match s {
       "file" => Ok(Self::FILE),
       "dir" => Ok(Self::DIRECTORY),
@@ -199,7 +218,8 @@ impl FromStr for CompoundKind {
 }
 
 #[derive(Debug)]
-pub struct Compound {
+pub struct Compound
+{
   pub name: String,
   pub title: String,
   pub kind: CompoundKind,
@@ -213,8 +233,10 @@ pub struct Compound {
   pub detailed_docs: Vec<String>,
 }
 
-impl Compound {
-  pub fn new() -> Self {
+impl Compound
+{
+  pub fn new() -> Self
+  {
     Self {
       name: String::from("?"),
       title: String::from("?"),
@@ -232,7 +254,8 @@ impl Compound {
 }
 
 #[derive(Debug)]
-pub struct Registry {
+pub struct Registry
+{
   pub compounds: HashMap<RefID, Compound>,
   pub classes: HashMap<RefID, Class>,
   pub functions: HashMap<RefID, Function>,
@@ -240,8 +263,10 @@ pub struct Registry {
   pub defines: HashMap<RefID, Define>,
 }
 
-impl Registry {
-  pub fn new() -> Self {
+impl Registry
+{
+  pub fn new() -> Self
+  {
     Self {
       compounds: HashMap::new(),
       classes: HashMap::new(),
@@ -251,7 +276,8 @@ impl Registry {
     }
   }
 
-  pub fn add_compound(&mut self, id: RefID, kind: CompoundKind, name: String) {
+  pub fn add_compound(&mut self, id: RefID, kind: CompoundKind, name: String)
+  {
     let mut compound = Compound::new();
     compound.name = name;
     compound.kind = kind;
