@@ -49,7 +49,7 @@ fn generate_template_parameter_docs(file: &mut File, parameters: &HashMap<String
   if !parameters.is_empty() {
     write!(file, "\n**Template Parameters**\n\n")?;
 
-    for (name, info) in &parameters {
+    for (name, info) in parameters.iter() {
       write!(file, "* `{}` {}\n", name, if info.is_empty() { "N/A" } else { info })?;
     }
 
