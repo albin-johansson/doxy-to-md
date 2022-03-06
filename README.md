@@ -14,9 +14,9 @@ the API documentation available in a Material for MkDocs environment.
 
 ## Building
 
-This tool is written in Rust, which makes is super easy to build the tool locally. All you need the Rust toolchain.
+This tool is written in Rust, which makes is super easy to build the tool locally. All you need is the Rust toolchain.
 
-Simply clone and unzip the repository to somewhere on your machine, and enter the following command in a shell, located
+Simply clone and unzip the repository to somewhere on your machine and enter the following command in a shell, opened
 in the root directory of the repository.
 
 ```shell
