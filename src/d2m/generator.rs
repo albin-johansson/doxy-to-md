@@ -131,7 +131,12 @@ fn generate_function_definition(file: &mut File, func: &Function) -> io::Result<
     }
     write!(file, ">\n")?;
   }
-  write!(file, "{} {}{};\n", &func.return_type, &func.name, &func.args)?;
+  write!(file, "{}{}{} {}{};\n",
+         if func.is_static { "static " } else { "" },
+         if func.is_explicit { "explicit " } else { "" },
+         &func.return_type,
+         &func.name,
+         &func.args)?;
   write!(file, "```\n")?;
 
   if !func.docs.see_also.is_empty() {

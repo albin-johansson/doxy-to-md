@@ -164,7 +164,9 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
   let mut new_args = String::with_capacity(func.args.len());
   let mut first = true;
 
-  let alignment_offset = func.return_type.len() + func.name.len() + 1;
+  let static_offset = if func.is_static { 7 } else { 0 };
+  let explicit_offset = if func.is_explicit { 9 } else { 0 };
+  let alignment_offset = func.return_type.len() + func.name.len() + static_offset + explicit_offset + 1;
 
   for arg in head.split(",").filter(|s| !s.is_empty()) {
     let is_pointer = arg.contains("*") || arg.contains("&");
