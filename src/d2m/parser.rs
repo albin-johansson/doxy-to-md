@@ -6,6 +6,8 @@ use std::str::FromStr;
 
 use minidom::Element;
 use minidom::NSChoice::Any as AnyNS;
+use lazy_static::lazy_static;
+use regex::Regex;
 
 use crate::d2m::doxygen::CompoundKind::*;
 use crate::d2m::doxygen::*;
@@ -189,9 +191,15 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
   func.args = new_args;
 }
 
-fn simplify_function_noexcept_specifier(_func: &mut Function)
+fn simplify_function_noexcept_specifier(func: &mut Function)
 {
-  // TODO
+  lazy_static! {
+    static ref RE: Regex = Regex::new(r"(?P<a>noexcept)(.*)").unwrap();
+  }
+
+  if func.args.contains("noexcept(") {
+    func.args = RE.replace_all(&func.args, "$a(...)").to_string();
+  }
 }
 
 fn parse_function_definition(elem: &Element, func: &mut Function)

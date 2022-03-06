@@ -11,3 +11,5 @@ description = "Converts Doxygen XML files to Markdown files"
 clap = { version = "3.1.5", features = ["derive"] }
 minidom = "0.12.0"
 path-absolutize = "3.0.11"
+regex = "1.5.4"
+lazy_static = "1.4.0"
