@@ -13,7 +13,6 @@ use crate::d2m::doxygen::*;
 fn parse_xml_file(path: &PathBuf) -> Element
 {
   let raw_contents = fs::read_to_string(&path).unwrap();
-
   let root_element: minidom::Element = raw_contents.parse().unwrap();
   return root_element;
 }
