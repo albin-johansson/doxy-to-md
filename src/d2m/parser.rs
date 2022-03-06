@@ -170,8 +170,11 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
     let is_pointer = arg.contains("*") || arg.contains("&");
 
     if !first {
-      new_args += ",\n";
-      new_args += iter::repeat(" ").take(alignment_offset).collect::<String>().as_str();
+      new_args += ",";
+      if !arg.contains("<") && !arg.contains(">") {
+        new_args += "\n";
+        new_args += iter::repeat(" ").take(alignment_offset).collect::<String>().as_str();
+      }
     }
 
     if !is_pointer && arg.contains("const") {
