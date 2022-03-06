@@ -152,16 +152,12 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
 
   let uses_trailing_return = func.return_type == "auto";
 
-  let head;
-  let tail;
-  if uses_trailing_return {
+  let (head, tail) = if uses_trailing_return {
     let mut separated = func.args.split("->");
-    head = separated.next().unwrap().to_owned();
-    tail = separated.next().unwrap().to_owned();
+    (separated.next().unwrap().to_owned(), separated.next().unwrap().to_owned())
   } else {
-    head = func.args.to_owned();
-    tail = String::new();
-  }
+    (func.args.to_owned(), String::new())
+  };
 
   let mut new_args = String::with_capacity(func.args.len());
   let mut first = true;
