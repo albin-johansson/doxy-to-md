@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
+use std::time::SystemTime;
 
 use crate::d2m::doxygen::{Compound, Function, RefID, Registry};
 use crate::d2m::doxygen::CompoundKind::*;
@@ -60,7 +61,8 @@ fn generate_template_parameter_docs(writer: &mut BufWriter<&File>, parameters: &
   Ok(())
 }
 
-fn generate_function_definition(writer: &mut BufWriter<&File>, func: &Function) -> io::Result<()>
+fn generate_function_definition(writer: &mut BufWriter<&File>, func: &Function)
+  -> io::Result<()>
 {
   write!(writer, "\n---\n")?;
   write!(writer, "\n### **{}**\n", &func.qualified_name)?;
@@ -346,7 +348,7 @@ fn generate_group_file(destination: &PathBuf,
 
 pub fn generate_markdown(output_dir: &PathBuf, registry: &Registry) -> io::Result<()>
 {
-  let start_time = std::time::SystemTime::now();
+  let start_time = SystemTime::now();
   println!("Generating Markdown output...");
 
   generate_index_file(output_dir, registry)?;
@@ -364,7 +366,7 @@ pub fn generate_markdown(output_dir: &PathBuf, registry: &Registry) -> io::Resul
     }
   }
 
-  let end_time = std::time::SystemTime::now();
+  let end_time = SystemTime::now();
   println!("Generated Markdown files in {} ms",
            end_time.duration_since(start_time).unwrap().as_millis());
 

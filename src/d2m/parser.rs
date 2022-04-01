@@ -3,6 +3,7 @@ use std::fs;
 use std::iter;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::time::SystemTime;
 
 use minidom::Element;
 use minidom::NSChoice::Any as AnyNS;
@@ -450,9 +451,8 @@ fn parse_index_file(input_dir: &PathBuf) -> Registry
   let mut registry = Registry::new();
 
   let index_file = input_dir.join("index.xml");
-  // println!("Parsing index file {}", index_file.display());
-
   let root_element = parse_xml_file(&index_file);
+
   for decl in root_element.children().filter(|e| e.is("compound", AnyNS)) {
     parse_compound_declaration(&mut registry, decl);
   }
@@ -462,7 +462,7 @@ fn parse_index_file(input_dir: &PathBuf) -> Registry
 
 pub fn parse_xml(input_dir: &PathBuf) -> Registry
 {
-  let start_time = std::time::SystemTime::now();
+  let start_time = SystemTime::now();
   println!("Parsing XML input...");
 
   let mut registry = parse_index_file(input_dir);
@@ -474,7 +474,7 @@ pub fn parse_xml(input_dir: &PathBuf) -> Registry
     }
   }
 
-  let end_time = std::time::SystemTime::now();
+  let end_time = SystemTime::now();
   println!("Parsed XML files in {} ms",
            end_time.duration_since(start_time).unwrap().as_millis());
 
