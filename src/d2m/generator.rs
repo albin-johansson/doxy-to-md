@@ -137,6 +137,30 @@ fn generate_parameter_list(writer: &mut BufWriter<&File>,
   Ok(())
 }
 
+fn generate_function_signature(writer: &mut BufWriter<&File>, func: &Function)
+  -> io::Result<()>
+{
+  if !func.template_args.is_empty() {
+    write!(writer, "template <")?;
+    let mut first = true;
+    for arg in &func.template_args {
+      write!(writer, "{}{}", if !first { ", " } else { "" }, arg)?;
+      first = false;
+    }
+    write!(writer, ">\n")?;
+  }
+
+  write!(writer, "{}{}{}{}{}{};\n",
+         if func.is_static { "static " } else { "" },
+         if func.is_explicit { "explicit " } else { "" },
+         &func.return_type,
+         if func.return_type.is_empty() { "" } else { " " },
+         &func.name,
+         &func.args)?;
+
+  Ok(())
+}
+
 fn generate_function_definition(writer: &mut BufWriter<&File>, func: &Function)
   -> io::Result<()>
 {
@@ -167,21 +191,7 @@ fn generate_function_definition(writer: &mut BufWriter<&File>, func: &Function)
   }
 
   write!(writer, "\n```C++\n")?;
-  if !func.template_args.is_empty() {
-    write!(writer, "template <")?;
-    let mut first = true;
-    for arg in &func.template_args {
-      write!(writer, "{}{}", if !first { ", " } else { "" }, arg)?;
-      first = false;
-    }
-    write!(writer, ">\n")?;
-  }
-  write!(writer, "{}{}{} {}{};\n",
-         if func.is_static { "static " } else { "" },
-         if func.is_explicit { "explicit " } else { "" },
-         &func.return_type,
-         &func.name,
-         &func.args)?;
+  generate_function_signature(writer, func)?;
   write!(writer, "```\n")?;
 
   if !func.docs.see_also.is_empty() {

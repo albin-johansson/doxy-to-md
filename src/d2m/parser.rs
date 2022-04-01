@@ -180,9 +180,11 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
   let mut new_args = String::with_capacity(func.args.len());
   let mut first = true;
 
-  let static_offset = if func.is_static { 7 } else { 0 };
-  let explicit_offset = if func.is_explicit { 9 } else { 0 };
-  let alignment_offset = func.return_type.len() + func.name.len() + static_offset + explicit_offset + 1;
+  let align_offset = func.return_type.len()
+      + func.name.len()
+      + if func.is_static { 7 } else { 0 }
+      + if func.is_explicit { 9 } else { 0 }
+      + if func.return_type.is_empty() { 0 } else { 1 };
 
   for arg in head.split(",").filter(|s| !s.is_empty()) {
     let is_pointer = arg.contains("*") || arg.contains("&");
@@ -191,7 +193,7 @@ fn remove_redundant_const_from_function_parameters(func: &mut Function)
       new_args += ",";
       if !arg.contains("<") && !arg.contains(">") {
         new_args += "\n";
-        new_args += iter::repeat(" ").take(alignment_offset).collect::<String>().as_str();
+        new_args += iter::repeat(" ").take(align_offset).collect::<String>().as_str();
       }
     }
 
