@@ -122,6 +122,21 @@ fn parse_comment(elem: &Element) -> Comment
                   comment.see_also.push(parse_text(para));
                 }
               }
+              "warning" => {
+                if let Some(para) = simple_section.get_child("para", AnyNS) {
+                  comment.warnings.push(parse_text(para));
+                }
+              }
+              "pre" => {
+                if let Some(para) = simple_section.get_child("para", AnyNS) {
+                  comment.pre_conditions.push(parse_text(para));
+                }
+              }
+              "post" => {
+                if let Some(para) = simple_section.get_child("para", AnyNS) {
+                  comment.post_conditions.push(parse_text(para));
+                }
+              }
               kind => println!("Ignoring simple section of type '{}'", kind),
             }
           }
@@ -257,7 +272,11 @@ fn parse_variable_definition(elem: &Element, var: &mut Variable)
   var.is_mutable = elem.attr("mutable").unwrap() == "yes";
   var.is_constexpr = elem.attr("constexpr").unwrap_or("no") == "yes";
 
+  var.name = elem.get_child("name", AnyNS).unwrap().text();
+  var.qualified_name = elem.get_child("qualifiedname", AnyNS).unwrap().text();
   var.definition = elem.get_child("definition", AnyNS).unwrap().text();
+
+  var.docs = parse_comment(elem);
 }
 
 fn parse_compound_definition(element: &Element, registry: &mut Registry)
@@ -320,7 +339,9 @@ fn parse_compound_definition(element: &Element, registry: &mut Registry)
 
 fn parse_generic_file(file_path: &PathBuf, registry: &mut Registry)
 {
-  if file_path.is_file() && file_path.file_name().unwrap() != "index.xml" {
+  if file_path.is_file()
+      && file_path.extension().unwrap() == "xml"
+      && file_path.file_name().unwrap() != "index.xml" {
     println!("Parsing file {}", file_path.display());
 
     let root_element = parse_xml_file(&file_path);
@@ -360,9 +381,9 @@ fn parse_member_declaration(registry: &mut Registry, element: &Element, parent_i
 fn parse_class_declaration(registry: &mut Registry,
                            ref_id: &RefID,
                            name: &String,
-                           is_struct: bool)
+                           clazz: Class)
 {
-  registry.classes.insert(ref_id.to_owned(), Class::new(is_struct));
+  registry.classes.insert(ref_id.to_owned(), clazz);
 
   let class = registry.classes.get_mut(ref_id).unwrap();
   class.unqualified_name = name.split("::").last().unwrap().to_owned();
@@ -380,9 +401,10 @@ fn parse_compound_declaration(registry: &mut Registry, element: &Element)
   let kind = CompoundKind::from_str(element.attr("kind").unwrap()).unwrap();
 
   match kind {
-    CLASS => parse_class_declaration(registry, &compound_id, &name, false),
-    STRUCT => parse_class_declaration(registry, &compound_id, &name, true),
-    _ => (),
+    CLASS => parse_class_declaration(registry, &compound_id, &name, Class::new()),
+    STRUCT => parse_class_declaration(registry, &compound_id, &name, Class::new_struct()),
+    INTERFACE => parse_class_declaration(registry, &compound_id, &name, Class::new_interface()),
+    k => println!("Ignoring {:?} in compound declaration", k),
   }
 
   registry.add_compound(compound_id.to_owned(), kind, name);
