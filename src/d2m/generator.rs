@@ -151,21 +151,6 @@ fn generate_function_definition(writer: &mut BufWriter<&File>, func: &Function)
   generate_parameter_list(writer, &func.parameter_names, &func.docs)?;
   generate_template_parameter_docs(writer, &func.docs.template_parameters)?;
 
-  if !func.parameter_names.is_empty() {
-    write!(writer, "\n**Parameters**\n\n")?;
-
-    for name in &func.parameter_names {
-      write!(writer, "* `{}`", name)?;
-
-      match func.docs.parameters.get(name) {
-        Some(desc) => write!(writer, " {}", desc)?,
-        None => write!(writer, " N/A")?
-      }
-
-      write!(writer, "\n")?;
-    }
-  }
-
   if !func.docs.exceptions.is_empty() {
     write!(writer, "\n**Exceptions**\n\n")?;
 
