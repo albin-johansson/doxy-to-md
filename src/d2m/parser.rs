@@ -279,6 +279,29 @@ fn parse_variable_definition(elem: &Element, var: &mut Variable)
   var.docs = parse_comment(elem);
 }
 
+fn parse_enum_definition(elem: &Element, e: &mut Enum)
+{
+  e.name = elem.get_child("name", AnyNS).unwrap().text();
+  e.qualified_name = elem.get_child("qualifiedname", AnyNS).unwrap().text();
+  e.is_scoped = elem.attr("strong").unwrap() == "yes";
+
+  e.docs = parse_comment(elem);
+
+  for value_elem in elem.children().filter(|c| c.is("enumvalue", AnyNS)) {
+    let mut value = EnumValue::new();
+
+    value.name = value_elem.get_child("name", AnyNS).unwrap().text();
+
+    if let Some(initializer) = value_elem.get_child("initializer", AnyNS) {
+      value.initializer = initializer.text().replace("= ", "");
+    }
+
+    value.docs = parse_comment(value_elem);
+
+    e.values.push(value);
+  }
+}
+
 fn parse_compound_definition(element: &Element, registry: &mut Registry)
 {
   let kind = element.attr("kind").unwrap();
@@ -321,10 +344,12 @@ fn parse_compound_definition(element: &Element, registry: &mut Registry)
               let mut var = registry.variables.get_mut(&member_id).unwrap();
               parse_variable_definition(member, &mut var);
             }
+            "enum" => {
+              let mut e = registry.enums.get_mut(&member_id).unwrap();
+              parse_enum_definition(member, &mut e);
+            }
             _ => ()
           }
-
-          // TODO enum
         }
       }
       "templateparamlist" => {
@@ -372,8 +397,14 @@ fn parse_member_declaration(registry: &mut Registry, element: &Element, parent_i
                                 Function::new(parent.kind == CLASS || parent.kind == STRUCT));
       parent.functions.push(member_id.to_owned());
     }
-    "enum" => {}
-    "enumvalue" => {}
+    "enum" => {
+      registry.enums.insert(member_id.to_owned(), Enum::new());
+      parent.enums.push(member_id.to_owned());
+    }
+    "enumvalue" => {
+      registry.enum_values.insert(member_id.to_owned(), EnumValue::new());
+      parent.enum_values.push(member_id.to_owned());
+    }
     kind => println!("Ignoring member declaration of type '{}'", kind),
   };
 }

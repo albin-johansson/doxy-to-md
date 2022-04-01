@@ -269,11 +269,35 @@ fn generate_group_file(destination: &PathBuf,
     }
   }
 
-  write!(writer, "\n## Functions\n\n")?;
-  if compound.functions.is_empty() {
-    write!(writer, "There are no functions associated with this group.\n")?;
-  } else {
-    write!(writer, "These are the free functions associated with this group.\n")?;
+  if !compound.enums.is_empty() {
+    write!(writer, "\n## Enums\n")?;
+    write!(writer, "\nThese are the enums associated with this group.\n")?;
+
+    for enum_id in &compound.enums {
+      let e = registry.enums.get(enum_id).unwrap();
+
+      write!(writer, "\n### enum{} {}\n\n",
+             if e.is_scoped { " class" } else { "" },
+             &e.qualified_name)?;
+
+      for brief in &e.docs.brief {
+        write!(writer, "{}\n", brief)?;
+      }
+
+      write!(writer, "\n| Enumerator | Value |\n")?;
+      write!(writer, "|-----------:|:------|\n")?;
+
+      for value in &e.values {
+        write!(writer, "|{}|{}|\n", &value.name, &value.initializer)?;
+      }
+
+      write!(writer, "\n---\n")?;
+    }
+  }
+
+  if !compound.functions.is_empty() {
+    write!(writer, "\n## Functions\n")?;
+    write!(writer, "\nThese are the free functions associated with this group.\n")?;
     for func_id in &compound.functions {
       let func = registry.functions.get(func_id).unwrap();
       if !func.is_member {

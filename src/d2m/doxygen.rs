@@ -211,6 +211,50 @@ impl Define
   }
 }
 
+#[derive(Debug)]
+pub struct EnumValue
+{
+  pub name: String,
+  pub initializer: String,
+  pub docs: Comment,
+}
+
+impl EnumValue
+{
+  pub fn new() -> Self
+  {
+    Self {
+      name: String::new(),
+      initializer: String::new(),
+      docs: Comment::new(),
+    }
+  }
+}
+
+#[derive(Debug)]
+pub struct Enum
+{
+  pub name: String,
+  pub qualified_name: String,
+  pub values: Vec<EnumValue>,
+  pub docs: Comment,
+  pub is_scoped: bool,
+}
+
+impl Enum
+{
+  pub fn new() -> Self
+  {
+    Self {
+      name: String::new(),
+      qualified_name: String::new(),
+      values: Vec::new(),
+      docs: Comment::new(),
+      is_scoped: false,
+    }
+  }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum CompoundKind
 {
@@ -256,6 +300,8 @@ pub struct Compound
   pub groups: Vec<RefID>,
   pub namespaces: Vec<RefID>,
   pub classes: Vec<RefID>,
+  pub enums: Vec<RefID>,
+  pub enum_values: Vec<RefID>,
   pub functions: Vec<RefID>,
   pub variables: Vec<RefID>,
   pub defines: Vec<RefID>,
@@ -274,6 +320,8 @@ impl Compound
       groups: Vec::new(),
       namespaces: Vec::new(),
       classes: Vec::new(),
+      enums: Vec::new(),
+      enum_values: Vec::new(),
       functions: Vec::new(),
       variables: Vec::new(),
       defines: Vec::new(),
@@ -288,6 +336,8 @@ pub struct Registry
 {
   pub compounds: HashMap<RefID, Compound>,
   pub classes: HashMap<RefID, Class>,
+  pub enums: HashMap<RefID, Enum>,
+  pub enum_values: HashMap<RefID, EnumValue>,
   pub functions: HashMap<RefID, Function>,
   pub variables: HashMap<RefID, Variable>,
   pub defines: HashMap<RefID, Define>,
@@ -300,6 +350,8 @@ impl Registry
     Self {
       compounds: HashMap::new(),
       classes: HashMap::new(),
+      enums: HashMap::new(),
+      enum_values: HashMap::new(),
       functions: HashMap::new(),
       variables: HashMap::new(),
       defines: HashMap::new(),
