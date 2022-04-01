@@ -1,8 +1,6 @@
 # doxy-to-md
 
-[Material for MkDocs]: https://squidfunk.github.io/mkdocs-material/
-
-Converts Doxygen XML output to Markdown files, for use with [Material for MkDocs].
+Converts Doxygen XML output to Markdown files.
 
 ## Disclaimer
 
@@ -10,11 +8,12 @@ Converts Doxygen XML output to Markdown files, for use with [Material for MkDocs
 
 This tool was written for use by the [Centurion] project. It is not intended to perform perfect or 100% complete
 conversions from Doxygen to Markdown. The goal is to provide a good overview of the APIs with minimal manual work to get
-the API documentation available in a Material for MkDocs environment.
+the API documentation available in Markdown format, which can be used in documentation generators such as GitBook,
+mdBook, or Material for MkDocs.
 
 ## Building
 
-This tool is written in Rust, which makes is super easy to build the tool locally. All you need is the Rust toolchain.
+This tool is written in Rust, which makes is very easy to build the tool locally. All you need is the Rust toolchain.
 
 Simply clone and unzip the repository to somewhere on your machine and enter the following command in a shell, opened
 in the root directory of the repository.
