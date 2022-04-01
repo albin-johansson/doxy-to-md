@@ -54,6 +54,7 @@ pub struct Comment
   pub exceptions: HashMap<String, String>,
   pub see_also: Vec<String>,
   pub notes: Vec<String>,
+  pub warnings: Vec<String>,
 }
 
 impl Comment
@@ -71,6 +72,7 @@ impl Comment
       exceptions: HashMap::new(),
       see_also: Vec::new(),
       notes: Vec::new(),
+      warnings: Vec::new(),
     }
   }
 }
@@ -79,8 +81,10 @@ impl Comment
 pub struct Variable
 {
   pub name: String,
+  pub qualified_name: String,
   pub definition: String,
   pub access: AccessModifier,
+  pub docs: Comment,
   pub is_static: bool,
   pub is_constexpr: bool,
   pub is_mutable: bool,
@@ -91,9 +95,11 @@ impl Variable
   pub fn new() -> Self
   {
     Self {
-      name: String::from("?"),
-      definition: String::from("?"),
+      name: String::new(),
+      qualified_name: String::new(),
+      definition: String::new(),
       access: PRIVATE,
+      docs: Comment::new(),
       is_static: false,
       is_constexpr: false,
       is_mutable: false,
@@ -153,16 +159,38 @@ pub struct Class
   pub unqualified_name: String,
   pub template_args: Vec<String>,
   pub is_struct: bool,
+  pub is_interface: bool,
 }
 
 impl Class
 {
-  pub fn new(is_struct: bool) -> Self
+  pub fn new() -> Self
   {
     Self {
       unqualified_name: String::from("?"),
       template_args: Vec::new(),
-      is_struct,
+      is_struct: false,
+      is_interface: false,
+    }
+  }
+
+  pub fn new_struct() -> Self
+  {
+    Self {
+      unqualified_name: String::new(),
+      template_args: Vec::new(),
+      is_struct: true,
+      is_interface: false,
+    }
+  }
+
+  pub fn new_interface() -> Self
+  {
+    Self {
+      unqualified_name: String::new(),
+      template_args: Vec::new(),
+      is_struct: false,
+      is_interface: true,
     }
   }
 }
@@ -192,6 +220,7 @@ pub enum CompoundKind
   NAMESPACE,
   CLASS,
   STRUCT,
+  INTERFACE,
   CONCEPT,
   PAGE,
   GROUP,
@@ -209,6 +238,7 @@ impl FromStr for CompoundKind
       "namespace" => Ok(Self::NAMESPACE),
       "class" => Ok(Self::CLASS),
       "struct" => Ok(Self::STRUCT),
+      "interface" => Ok(Self::INTERFACE),
       "concept" => Ok(Self::CONCEPT),
       "page" => Ok(Self::PAGE),
       "group" => Ok(Self::GROUP),
