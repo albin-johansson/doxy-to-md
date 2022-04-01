@@ -4,7 +4,7 @@ use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-use crate::d2m::doxygen::{Compound, Function, RefID, Registry};
+use crate::d2m::doxygen::*;
 use crate::d2m::doxygen::CompoundKind::*;
 
 fn generate_group_filename(name: &str) -> String
@@ -20,6 +20,57 @@ fn get_class_filename(name: &str) -> String
                      .replace("<", "_")
                      .replace(">", "_")
                      .replace(" ", ""));
+}
+
+fn generate_function_comment(writer: &mut BufWriter<&File>, docs: &Comment) -> io::Result<()>
+{
+  if !docs.brief.is_empty() {
+    for docs in &docs.brief {
+      write!(writer, "\n**Synopsis**: {}\n", docs)?;
+    }
+  }
+
+  if !docs.notes.is_empty() {
+    for note in &docs.notes {
+      write!(writer, "\n**Note**\n")?;
+      write!(writer, "\n{}\n", note)?;
+    }
+  }
+
+  if !docs.warnings.is_empty() {
+    for warning in &docs.warnings {
+      write!(writer, "\n**Warning**\n")?;
+      write!(writer, "\n{}\n", warning)?;
+    }
+  }
+
+  if !docs.pre_conditions.is_empty() {
+    write!(writer, "\n**Pre-conditions**\n\n")?;
+
+    for pre in &docs.pre_conditions {
+      write!(writer, "* {}\n", pre)?;
+    }
+
+    write!(writer, "\n")?;
+  }
+
+  if !docs.post_conditions.is_empty() {
+    write!(writer, "\n**Post-conditions**\n\n")?;
+
+    for post in &docs.post_conditions {
+      write!(writer, "* {}\n", post)?;
+    }
+
+    write!(writer, "\n")?;
+  }
+
+  if !docs.details.is_empty() {
+    for details in &docs.details {
+      write!(writer, "\n{}\n", details)?;
+    }
+  }
+
+  Ok(())
 }
 
 fn generate_index_file(output_dir: &PathBuf, registry: &Registry) -> io::Result<()>
@@ -42,10 +93,12 @@ fn generate_index_file(output_dir: &PathBuf, registry: &Registry) -> io::Result<
     }
   }
 
+  writer.flush()?;
   Ok(())
 }
 
-fn generate_template_parameter_docs(writer: &mut BufWriter<&File>, parameters: &HashMap<String, String>)
+fn generate_template_parameter_docs(writer: &mut BufWriter<&File>,
+                                    parameters: &HashMap<String, String>)
   -> io::Result<()>
 {
   if !parameters.is_empty() {
@@ -61,64 +114,41 @@ fn generate_template_parameter_docs(writer: &mut BufWriter<&File>, parameters: &
   Ok(())
 }
 
+fn generate_parameter_list(writer: &mut BufWriter<&File>,
+                           parameters: &Vec<String>,
+                           docs: &Comment)
+  -> io::Result<()>
+{
+  if !parameters.is_empty() {
+    write!(writer, "\n**Parameters**\n\n")?;
+
+    for name in parameters {
+      write!(writer, "- `{}`", name)?;
+
+      match docs.parameters.get(name) {
+        Some(desc) => write!(writer, " {}", desc)?,
+        None => write!(writer, " N/A")?
+      }
+
+      write!(writer, "\n")?;
+    }
+  }
+
+  Ok(())
+}
+
 fn generate_function_definition(writer: &mut BufWriter<&File>, func: &Function)
   -> io::Result<()>
 {
-  write!(writer, "\n---\n")?;
   write!(writer, "\n### **{}**\n", &func.qualified_name)?;
 
-  if !func.docs.brief.is_empty() {
-    for docs in &func.docs.brief {
-      write!(writer, "\n**Synopsis**: {}\n", docs)?;
-    }
-  } else {
-    write!(writer, "\nThis function has no brief documentation.\n")?;
-  }
-
-  if !func.docs.details.is_empty() {
-    for docs in &func.docs.details {
-      write!(writer, "\n{}\n", docs)?;
-    }
-  }
+  generate_function_comment(writer, &func.docs)?;
 
   if func.is_member {
     write!(writer, "\n*This is a {} function.*\n", func.access)?;
   }
 
-  if !func.docs.notes.is_empty() {
-    for note in &func.docs.notes {
-      write!(writer, "\n!!! note\n")?;
-      write!(writer, "    {}\n", note)?;
-    }
-  }
-
-  if !func.docs.warnings.is_empty() {
-    for warning in &func.docs.warnings {
-      write!(writer, "\n!!! warning\n")?;
-      write!(writer, "    {}\n", warning)?;
-    }
-  }
-
-  if !func.docs.pre_conditions.is_empty() {
-    write!(writer, "\n**Pre-conditions**\n\n")?;
-
-    for cond in &func.docs.pre_conditions {
-      write!(writer, "* {}\n", cond)?;
-    }
-
-    write!(writer, "\n")?;
-  }
-
-  if !func.docs.post_conditions.is_empty() {
-    write!(writer, "\n**Post-conditions**\n\n")?;
-
-    for cond in &func.docs.post_conditions {
-      write!(writer, "* {}\n", cond)?;
-    }
-
-    write!(writer, "\n")?;
-  }
-
+  generate_parameter_list(writer, &func.parameter_names, &func.docs)?;
   generate_template_parameter_docs(writer, &func.docs.template_parameters)?;
 
   if !func.parameter_names.is_empty() {
@@ -223,6 +253,42 @@ fn generate_class_file(destination: &PathBuf,
     generate_function_definition(&mut writer, &func)?;
   }
 
+  writer.flush()?;
+  Ok(())
+}
+
+fn generate_enum_definition(writer: &mut BufWriter<&File>,
+                            enumeration: &Enum)
+  -> io::Result<()>
+{
+  write!(writer, "\n## {}\n", &enumeration.qualified_name)?;
+
+  write!(writer, "\n```C++\n")?;
+  write!(writer, "enum{} {} \n{{\n",
+         if enumeration.is_scoped { " class" } else { "" },
+         &enumeration.name)?;
+
+  for value in &enumeration.values {
+    write!(writer, "  {}", &value.name)?;
+
+    if !value.initializer.is_empty() {
+      write!(writer, " = {}", &value.initializer)?;
+    }
+
+    write!(writer, ",\n")?;
+  }
+
+  write!(writer, "}}\n")?;
+  write!(writer, "```\n")?;
+
+  // write!(writer, "\n| Enumerator | Description |\n")?;
+  // write!(writer, "|-----------:|:------------|\n")?;
+  // for value in &enumeration.values {
+  //   if !value.docs.brief.is_empty() {
+  //     write!(writer, "|`{}`|{}|\n", &value.name, &value.docs.brief.join(" "))?;
+  //   }
+  // }
+
   Ok(())
 }
 
@@ -245,26 +311,26 @@ fn generate_group_file(destination: &PathBuf,
     write!(writer, "\n{}\n", &par)?;
   }
 
-  write!(writer, "\n## Groups\n\n")?;
-  if compound.groups.is_empty() {
-    write!(writer, "There are no associated subgroups for this group.\n")?;
-  } else {
+  if !compound.groups.is_empty() {
+    write!(writer, "\n---")?;
+    write!(writer, "\n## Groups\n\n")?;
+
     for group_id in &compound.groups {
       let group = registry.compounds.get(group_id).unwrap();
-      write!(writer, "* {}\n", &group.title)?;
+      write!(writer, "- {}\n", &group.title)?;
     }
   }
 
-  write!(writer, "\n## Classes & Structs\n\n")?;
-  if compound.classes.is_empty() {
-    write!(writer, "There are no classes or structs associated with this group.\n")?;
-  } else {
+  if !compound.classes.is_empty() {
+    write!(writer, "\n---")?;
+    write!(writer, "\n## Classes\n\n")?;
+
     for class_id in &compound.classes {
       let class = registry.classes.get(class_id).unwrap();
       let class_compound = registry.compounds.get(class_id).unwrap();
       let filename = get_class_filename(&class_compound.name);
       write!(writer,
-             "* [{} {}](../classes/{})\n",
+             "- [{} {}](../classes/{})\n",
              if class.is_struct { "struct" } else { "class" },
              &class.unqualified_name,
              &filename)?;
@@ -272,32 +338,18 @@ fn generate_group_file(destination: &PathBuf,
   }
 
   if !compound.enums.is_empty() {
+    write!(writer, "\n---")?;
     write!(writer, "\n## Enums\n")?;
     write!(writer, "\nThese are the enums associated with this group.\n")?;
 
     for enum_id in &compound.enums {
-      let e = registry.enums.get(enum_id).unwrap();
-
-      write!(writer, "\n### enum{} {}\n\n",
-             if e.is_scoped { " class" } else { "" },
-             &e.qualified_name)?;
-
-      for brief in &e.docs.brief {
-        write!(writer, "{}\n", brief)?;
-      }
-
-      write!(writer, "\n| Enumerator | Value |\n")?;
-      write!(writer, "|-----------:|:------|\n")?;
-
-      for value in &e.values {
-        write!(writer, "|{}|{}|\n", &value.name, &value.initializer)?;
-      }
-
-      write!(writer, "\n---\n")?;
+      let enumeration = registry.enums.get(enum_id).unwrap();
+      generate_enum_definition(&mut writer, enumeration)?;
     }
   }
 
   if !compound.functions.is_empty() {
+    write!(writer, "\n---")?;
     write!(writer, "\n## Functions\n")?;
     write!(writer, "\nThese are the free functions associated with this group.\n")?;
     for func_id in &compound.functions {
@@ -308,11 +360,10 @@ fn generate_group_file(destination: &PathBuf,
     }
   }
 
-  write!(writer, "\n## Variables\n\n")?;
-  if compound.variables.is_empty() {
-    write!(writer, "There are no variables associated with this group.\n")?;
-  } else {
-    write!(writer, "These are the variables associated with this group.\n")?;
+  if !compound.variables.is_empty() {
+    write!(writer, "\n---")?;
+    write!(writer, "\n## Variables\n")?;
+    write!(writer, "\nThese are the variables associated with this group.\n")?;
 
     for variable_id in &compound.variables {
       let variable = registry.variables.get(variable_id).unwrap();
@@ -328,21 +379,20 @@ fn generate_group_file(destination: &PathBuf,
       write!(writer, "```C++\n")?;
       write!(writer, "{};\n", &variable.definition)?;
       write!(writer, "```\n")?;
-
-      write!(writer, "\n---\n")?;
     }
   }
 
-  write!(writer, "\n## Defines\n\n")?;
-  if compound.defines.is_empty() {
-    write!(writer, "There are no defines associated with this group.\n")?;
-  } else {
+  if !compound.defines.is_empty() {
+    write!(writer, "\n---")?;
+    write!(writer, "\n## Macros\n\n")?;
+
     for define_id in &compound.defines {
       let define = registry.defines.get(define_id).unwrap();
       write!(writer, "* {}\n", &define.name)?;
     }
   }
 
+  writer.flush()?;
   Ok(())
 }
 
