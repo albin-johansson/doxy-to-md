@@ -217,6 +217,12 @@ fn generate_class_file(destination: &PathBuf,
   let mut writer = BufWriter::new(&file);
   write!(writer, "# {}\n", &compound.name)?;
 
+  for par in &compound.docs.brief {
+    write!(writer, "\n{}\n", par)?;
+  }
+
+  write!(writer, "\n[More...](#detailed-description)\n")?;
+
   write!(writer, "\n```C++\n")?;
   if !class.template_args.is_empty() {
     write!(writer, "template <")?;
@@ -231,14 +237,29 @@ fn generate_class_file(destination: &PathBuf,
          &class.unqualified_name)?;
   write!(writer, "```\n")?;
 
-  for par in &compound.brief_docs {
-    write!(writer, "\n{}\n", par)?;
+  write!(writer, "\n## API\n")?;
+
+  write!(writer, "\n```C++\n")?;
+  for func_id in &compound.functions {
+    let func = registry.functions.get(func_id).unwrap();
+    generate_function_signature(&mut writer, func)?;
+    write!(writer, "\n")?;
+  }
+  write!(writer, "```\n")?;
+
+  if !compound.docs.details.is_empty() {
+    write!(writer, "\n## Detailed Description\n\n")?;
+    for par in &compound.docs.details {
+      write!(writer, "\n{}\n", par)?;
+    }
   }
 
-  write!(writer, "\n## Detailed Description\n\n")?;
+  for note in &compound.docs.notes {
+    write!(writer, "\n**Note**: {}\n", note)?;
+  }
 
-  for par in &compound.detailed_docs {
-    write!(writer, "\n{}\n", par)?;
+  for see in &compound.docs.see_also {
+    write!(writer, "\n**See**: {}\n", see)?;
   }
 
   write!(writer, "\n## Members\n")?;
@@ -298,11 +319,11 @@ fn generate_group_file(destination: &PathBuf,
 
   write!(writer, "# {}\n", &compound.title)?;
 
-  for par in &compound.brief_docs {
+  for par in &compound.docs.brief {
     write!(writer, "\n{}\n", &par)?;
   }
 
-  for par in &compound.detailed_docs {
+  for par in &compound.docs.details {
     write!(writer, "\n{}\n", &par)?;
   }
 

@@ -106,7 +106,7 @@ fn parse_comment(elem: &Element) -> Comment
             }
           }
 
-          if let Some(simple_section) = child.get_child("simplesect", AnyNS) {
+          for simple_section in child.children().filter(|c| c.is("simplesect", AnyNS)) {
             match simple_section.attr("kind").unwrap() {
               "return" => {
                 if let Some(para) = simple_section.get_child("para", AnyNS) {
@@ -315,6 +315,8 @@ fn parse_compound_definition(element: &Element, registry: &mut Registry)
 
   let compound_id = element.attr("id").unwrap();
   let mut compound = registry.compounds.get_mut(compound_id).unwrap();
+
+  compound.docs = parse_comment(element);
 
   for elem in element.children() {
     match elem.name() {

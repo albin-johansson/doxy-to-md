@@ -305,8 +305,7 @@ pub struct Compound
   pub functions: Vec<RefID>,
   pub variables: Vec<RefID>,
   pub defines: Vec<RefID>,
-  pub brief_docs: Vec<String>,
-  pub detailed_docs: Vec<String>,
+  pub docs: Comment,
 }
 
 impl Compound
@@ -314,8 +313,8 @@ impl Compound
   pub fn new() -> Self
   {
     Self {
-      name: String::from("?"),
-      title: String::from("?"),
+      name: String::new(),
+      title: String::new(),
       kind: CompoundKind::UNKNOWN,
       groups: Vec::new(),
       namespaces: Vec::new(),
@@ -325,8 +324,7 @@ impl Compound
       functions: Vec::new(),
       variables: Vec::new(),
       defines: Vec::new(),
-      brief_docs: Vec::new(),
-      detailed_docs: Vec::new(),
+      docs: Comment::new(),
     }
   }
 }
