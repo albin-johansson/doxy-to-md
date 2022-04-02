@@ -294,7 +294,7 @@ fn generate_enum_definition(writer: &mut BufWriter<&File>,
     write!(writer, ",\n")?;
   }
 
-  write!(writer, "}}\n")?;
+  write!(writer, "}};\n")?;
   write!(writer, "```\n")?;
 
   // write!(writer, "\n| Enumerator | Description |\n")?;
