@@ -22,52 +22,71 @@ fn get_class_filename(name: &str) -> String
                      .replace(" ", ""));
 }
 
-fn generate_function_comment(writer: &mut BufWriter<&File>, docs: &Comment) -> io::Result<()>
+fn generate_function_comment(writer: &mut BufWriter<&File>, func: &Function) -> io::Result<()>
 {
-  if !docs.brief.is_empty() {
-    for docs in &docs.brief {
-      write!(writer, "\n**Synopsis**: {}\n", docs)?;
+  if !func.docs.brief.is_empty() {
+    for docs in &func.docs.brief {
+      write!(writer, "\n**Brief:** {}\n", docs)?;
     }
   }
 
-  if !docs.notes.is_empty() {
-    for note in &docs.notes {
-      write!(writer, "\n**Note**\n")?;
-      write!(writer, "\n{}\n", note)?;
-    }
-  }
-
-  if !docs.warnings.is_empty() {
-    for warning in &docs.warnings {
-      write!(writer, "\n**Warning**\n")?;
-      write!(writer, "\n{}\n", warning)?;
-    }
-  }
-
-  if !docs.pre_conditions.is_empty() {
+  if !func.docs.pre_conditions.is_empty() {
     write!(writer, "\n**Pre-conditions**\n\n")?;
 
-    for pre in &docs.pre_conditions {
-      write!(writer, "* {}\n", pre)?;
+    for pre in &func.docs.pre_conditions {
+      write!(writer, "- {}\n", pre)?;
     }
 
     write!(writer, "\n")?;
   }
 
-  if !docs.post_conditions.is_empty() {
+  if !func.docs.post_conditions.is_empty() {
     write!(writer, "\n**Post-conditions**\n\n")?;
 
-    for post in &docs.post_conditions {
-      write!(writer, "* {}\n", post)?;
+    for post in &func.docs.post_conditions {
+      write!(writer, "- {}\n", post)?;
     }
 
     write!(writer, "\n")?;
   }
 
-  if !docs.details.is_empty() {
-    for details in &docs.details {
+  if !func.docs.details.is_empty() {
+    for details in &func.docs.details {
       write!(writer, "\n{}\n", details)?;
     }
+  }
+
+  if !func.docs.notes.is_empty() {
+    for note in &func.docs.notes {
+      write!(writer, "\n**Note:** {}\n", note)?;
+    }
+  }
+
+  if !func.docs.warnings.is_empty() {
+    for warning in &func.docs.warnings {
+      write!(writer, "\n**Warning:** {}\n", warning)?;
+    }
+  }
+
+  if func.is_member {
+    write!(writer, "\n*This is a {} function.*\n", func.access)?;
+  }
+
+  generate_parameter_list(writer, &func.parameter_names, &func.docs)?;
+  generate_template_parameter_docs(writer, &func.docs.template_parameters)?;
+
+  if !func.docs.exceptions.is_empty() {
+    write!(writer, "\n**Exceptions**\n\n")?;
+
+    for (name, desc) in &func.docs.exceptions {
+      write!(writer, "- `{}` {}\n", name, desc)?;
+    }
+
+    write!(writer, "\n")?;
+  }
+
+  if !func.docs.returns.is_empty() {
+    write!(writer, "\n**Returns:** {}\n", &func.docs.returns)?;
   }
 
   Ok(())
@@ -82,14 +101,26 @@ fn generate_index_file(output_dir: &PathBuf, registry: &Registry) -> io::Result<
   let mut writer = BufWriter::new(&file);
 
   write!(writer, "# API\n")?;
-  write!(writer, "\nHere is a list of all modules.\n")?;
 
   write!(writer, "\n## Modules\n\n")?;
+  write!(writer, "\nHere is a list of all modules.\n\n")?;
 
   for (_, compound) in &registry.compounds {
     // TODO arrange by group relations (subgroups)
     if compound.kind == GROUP {
       write!(writer, "* [{}](groups/{})\n", &compound.title, generate_group_filename(&compound.name))?;
+    }
+  }
+
+  write!(writer, "\n## Classes\n\n")?;
+  write!(writer, "\nHere is a list of all classes.\n\n")?;
+
+  for (compound_id, compound) in &registry.compounds {
+    if compound.kind == CLASS || compound.kind == STRUCT || compound.kind == INTERFACE {
+      let clazz = registry.classes.get(compound_id).unwrap();
+      write!(writer, "* [{}](classes/{})\n",
+             &clazz.unqualified_name,
+             get_class_filename(&compound.name))?;
     }
   }
 
@@ -166,33 +197,11 @@ fn generate_function_definition(writer: &mut BufWriter<&File>, func: &Function)
 {
   write!(writer, "\n### **{}**\n", &func.qualified_name)?;
 
-  generate_function_comment(writer, &func.docs)?;
-
-  if func.is_member {
-    write!(writer, "\n*This is a {} function.*\n", func.access)?;
-  }
-
-  generate_parameter_list(writer, &func.parameter_names, &func.docs)?;
-  generate_template_parameter_docs(writer, &func.docs.template_parameters)?;
-
-  if !func.docs.exceptions.is_empty() {
-    write!(writer, "\n**Exceptions**\n\n")?;
-
-    for (name, desc) in &func.docs.exceptions {
-      write!(writer, "* `{}` {}\n", name, desc)?;
-    }
-
-    write!(writer, "\n")?;
-  }
-
-  if !func.docs.returns.is_empty() {
-    write!(writer, "\n**Returns**\n\n")?;
-    write!(writer, "{}\n", &func.docs.returns)?;
-  }
-
   write!(writer, "\n```C++\n")?;
   generate_function_signature(writer, func)?;
   write!(writer, "```\n")?;
+
+  generate_function_comment(writer, &func)?;
 
   if !func.docs.see_also.is_empty() {
     write!(writer, "\n**See Also**\n\n")?;
@@ -221,7 +230,9 @@ fn generate_class_file(destination: &PathBuf,
     write!(writer, "\n{}\n", par)?;
   }
 
-  write!(writer, "\n[More...](#detailed-description)\n")?;
+  if !compound.docs.details.is_empty() {
+    write!(writer, "\n[More...](#detailed-description)\n")?;
+  }
 
   write!(writer, "\n```C++\n")?;
   if !class.template_args.is_empty() {
@@ -237,15 +248,26 @@ fn generate_class_file(destination: &PathBuf,
          &class.unqualified_name)?;
   write!(writer, "```\n")?;
 
-  write!(writer, "\n## API\n")?;
+  // TODO typedefs
 
-  write!(writer, "\n```C++\n")?;
-  for func_id in &compound.functions {
-    let func = registry.functions.get(func_id).unwrap();
-    generate_function_signature(&mut writer, func)?;
-    write!(writer, "\n")?;
+  if !compound.functions.is_empty() {
+    write!(writer, "\n## API\n")?;
+
+    let count = compound.functions.len();
+    let mut index: usize = 0;
+
+    write!(writer, "\n```C++\n")?;
+    for func_id in &compound.functions {
+      let func = registry.functions.get(func_id).unwrap();
+      generate_function_signature(&mut writer, func)?;
+
+      index += 1;
+      if index != count {
+        write!(writer, "\n")?;
+      }
+    }
+    write!(writer, "```\n")?;
   }
-  write!(writer, "```\n")?;
 
   if !compound.docs.details.is_empty() {
     write!(writer, "\n## Detailed Description\n\n")?;
