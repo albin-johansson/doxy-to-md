@@ -7,6 +7,8 @@ use std::time::SystemTime;
 use crate::d2m::doxygen::*;
 use crate::d2m::doxygen::CompoundKind::*;
 
+type EmitResult = io::Result<()>;
+
 fn generate_group_filename(name: &str) -> String
 {
   return format!("group_{}.md", name.to_lowercase().replace(" ", "_"));
@@ -22,7 +24,7 @@ fn get_class_filename(name: &str) -> String
                      .replace(" ", ""));
 }
 
-fn generate_function_comment(writer: &mut BufWriter<&File>, func: &Function) -> io::Result<()>
+fn generate_function_comment(writer: &mut BufWriter<&File>, func: &Function) -> EmitResult
 {
   if !func.docs.brief.is_empty() {
     for docs in &func.docs.brief {
@@ -36,8 +38,6 @@ fn generate_function_comment(writer: &mut BufWriter<&File>, func: &Function) -> 
     for pre in &func.docs.pre_conditions {
       write!(writer, "- {}\n", pre)?;
     }
-
-    write!(writer, "\n")?;
   }
 
   if !func.docs.post_conditions.is_empty() {
@@ -46,13 +46,11 @@ fn generate_function_comment(writer: &mut BufWriter<&File>, func: &Function) -> 
     for post in &func.docs.post_conditions {
       write!(writer, "- {}\n", post)?;
     }
-
-    write!(writer, "\n")?;
   }
 
   if !func.docs.details.is_empty() {
     for details in &func.docs.details {
-      write!(writer, "\n{}\n", details)?;
+      write!(writer, "{}\n", details)?;
     }
   }
 
@@ -92,27 +90,15 @@ fn generate_function_comment(writer: &mut BufWriter<&File>, func: &Function) -> 
   Ok(())
 }
 
-fn generate_index_file(output_dir: &PathBuf, registry: &Registry) -> io::Result<()>
+fn emit_class_index(output_dir: &PathBuf, registry: &Registry) -> EmitResult
 {
-  let path = output_dir.join("index.md");
-  println!("Generating file {}", path.display());
+  println!("Generating class index...");
 
+  let path = output_dir.join("classes.md");
   let file = File::create(path)?;
   let mut writer = BufWriter::new(&file);
 
-  write!(writer, "# API\n")?;
-
-  write!(writer, "\n## Modules\n\n")?;
-  write!(writer, "\nHere is a list of all modules.\n\n")?;
-
-  for (_, compound) in &registry.compounds {
-    // TODO arrange by group relations (subgroups)
-    if compound.kind == GROUP {
-      write!(writer, "* [{}](groups/{})\n", &compound.title, generate_group_filename(&compound.name))?;
-    }
-  }
-
-  write!(writer, "\n## Classes\n\n")?;
+  write!(writer, "# Classes\n")?;
   write!(writer, "\nHere is a list of all classes.\n\n")?;
 
   for (compound_id, compound) in &registry.compounds {
@@ -128,9 +114,32 @@ fn generate_index_file(output_dir: &PathBuf, registry: &Registry) -> io::Result<
   Ok(())
 }
 
+fn emit_module_index(output_dir: &PathBuf, registry: &Registry) -> EmitResult
+{
+  println!("Generating module index...");
+
+  let path = output_dir.join("modules.md");
+  let file = File::create(path)?;
+  let mut writer = BufWriter::new(&file);
+
+  write!(writer, "# Modules\n")?;
+  write!(writer, "\nHere is a list of all modules.\n\n")?;
+
+  // TODO emit alphabetically sorted list
+  for (_, compound) in &registry.compounds {
+    // TODO arrange by group relations (subgroups)
+    if compound.kind == GROUP {
+      write!(writer, "* [{}](groups/{})\n", &compound.title, generate_group_filename(&compound.name))?;
+    }
+  }
+
+  writer.flush()?;
+  Ok(())
+}
+
 fn generate_template_parameter_docs(writer: &mut BufWriter<&File>,
                                     parameters: &HashMap<String, String>)
-  -> io::Result<()>
+  -> EmitResult
 {
   if !parameters.is_empty() {
     write!(writer, "\n**Template Parameters**\n\n")?;
@@ -148,7 +157,7 @@ fn generate_template_parameter_docs(writer: &mut BufWriter<&File>,
 fn generate_parameter_list(writer: &mut BufWriter<&File>,
                            parameters: &Vec<String>,
                            docs: &Comment)
-  -> io::Result<()>
+  -> EmitResult
 {
   if !parameters.is_empty() {
     write!(writer, "\n**Parameters**\n\n")?;
@@ -157,11 +166,9 @@ fn generate_parameter_list(writer: &mut BufWriter<&File>,
       write!(writer, "- `{}`", name)?;
 
       match docs.parameters.get(name) {
-        Some(desc) => write!(writer, " {}", desc)?,
-        None => write!(writer, " N/A")?
+        Some(desc) => write!(writer, " {}\n", desc)?,
+        None => write!(writer, " N/A\n")?
       }
-
-      write!(writer, "\n")?;
     }
   }
 
@@ -169,7 +176,7 @@ fn generate_parameter_list(writer: &mut BufWriter<&File>,
 }
 
 fn generate_function_signature(writer: &mut BufWriter<&File>, func: &Function)
-  -> io::Result<()>
+  -> EmitResult
 {
   if !func.template_args.is_empty() {
     write!(writer, "template <")?;
@@ -193,7 +200,7 @@ fn generate_function_signature(writer: &mut BufWriter<&File>, func: &Function)
 }
 
 fn generate_function_definition(writer: &mut BufWriter<&File>, func: &Function)
-  -> io::Result<()>
+  -> EmitResult
 {
   write!(writer, "\n### **{}**\n", &func.qualified_name)?;
 
@@ -216,7 +223,7 @@ fn generate_function_definition(writer: &mut BufWriter<&File>, func: &Function)
 fn generate_class_file(destination: &PathBuf,
                        registry: &Registry,
                        compound_id: &RefID,
-                       compound: &Compound) -> io::Result<()>
+                       compound: &Compound) -> EmitResult
 {
   // println!("Generating file {}", destination.display());
 
@@ -270,25 +277,33 @@ fn generate_class_file(destination: &PathBuf,
   }
 
   if !compound.docs.details.is_empty() {
-    write!(writer, "\n## Detailed Description\n\n")?;
+    write!(writer, "\n## Detailed Description\n")?;
     for par in &compound.docs.details {
       write!(writer, "\n{}\n", par)?;
     }
   }
 
-  for note in &compound.docs.notes {
-    write!(writer, "\n**Note**: {}\n", note)?;
+  if !compound.docs.notes.is_empty() {
+    write!(writer, "\n")?;
+    for note in &compound.docs.notes {
+      write!(writer, "**Note**: {}\n", note)?;
+    }
   }
 
-  for see in &compound.docs.see_also {
-    write!(writer, "\n**See**: {}\n", see)?;
+  if !compound.docs.see_also.is_empty() {
+    write!(writer, "\n**See Also**\n")?;
+    for see in &compound.docs.see_also {
+      write!(writer, "- {}\n", see)?;
+    }
   }
 
-  write!(writer, "\n## Members\n")?;
+  if !compound.functions.is_empty() {
+    write!(writer, "\n## Members\n")?;
 
-  for func_id in &compound.functions {
-    let func = registry.functions.get(func_id).unwrap();
-    generate_function_definition(&mut writer, &func)?;
+    for func_id in &compound.functions {
+      let func = registry.functions.get(func_id).unwrap();
+      generate_function_definition(&mut writer, &func)?;
+    }
   }
 
   writer.flush()?;
@@ -297,7 +312,7 @@ fn generate_class_file(destination: &PathBuf,
 
 fn generate_enum_definition(writer: &mut BufWriter<&File>,
                             enumeration: &Enum)
-  -> io::Result<()>
+  -> EmitResult
 {
   write!(writer, "\n## {}\n", &enumeration.qualified_name)?;
 
@@ -332,7 +347,7 @@ fn generate_enum_definition(writer: &mut BufWriter<&File>,
 
 fn generate_group_file(destination: &PathBuf,
                        registry: &Registry,
-                       compound: &Compound) -> io::Result<()>
+                       compound: &Compound) -> EmitResult
 {
   println!("Generating file {}", destination.display());
 
@@ -434,12 +449,13 @@ fn generate_group_file(destination: &PathBuf,
   Ok(())
 }
 
-pub fn generate_markdown(output_dir: &PathBuf, registry: &Registry) -> io::Result<()>
+pub fn generate_markdown(output_dir: &PathBuf, registry: &Registry) -> EmitResult
 {
   let start_time = SystemTime::now();
   println!("Generating Markdown output...");
 
-  generate_index_file(output_dir, registry)?;
+  emit_module_index(output_dir, registry)?;
+  emit_class_index(output_dir, registry)?;
 
   let group_dir = output_dir.join("groups");
   let class_dir = output_dir.join("classes");
